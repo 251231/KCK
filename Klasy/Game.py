@@ -68,7 +68,7 @@ class Game:
             self.draw_chat()
 
         x, y = int(self.player.rect.x), int(self.player.rect.y)
-        coords_text = font.render(f"X: {x} Y: {y}", True, BLACK)
+        coords_text = font.render(f"X: {x}, Y: {y}", True, BLACK)
         screen.blit(coords_text, (10, 10))
 
         pygame.draw.rect(screen, RED, self.quit_button)
