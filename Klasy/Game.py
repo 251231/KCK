@@ -20,10 +20,25 @@ class Game:
         self.quit_button = pygame.Rect(SCREEN_WIDTH - 210, SCREEN_HEIGHT - 70, 200,
                                        50)
         self.ui = UserInterface(self.player)
+        original_bg = pygame.image.load("assets/Glowna_mapa.png").convert()
+        original_width, original_height = original_bg.get_size()
+        scaled_bg = pygame.transform.scale(original_bg, (SCREEN_WIDTH, original_height))
+        self.map_background = scaled_bg
+
 
     def update(self, dx, dy, delta_time):
         """Aktualizacja gry (ruch gracza i kolizje)."""
         self.player.move(dx, dy, delta_time, self.objects)
+
+        # Oblicz kamerę, tak by gracz był na środku ekranu
+        self.camera_x = self.player.rect.centerx - SCREEN_WIDTH // 2
+        self.camera_y = self.player.rect.centery - SCREEN_HEIGHT // 2
+
+        # Ogranicz kamerę do granic mapy (jeśli nie chcesz pokazywać "czarnego")
+        bg_width, bg_height = self.map_background.get_size()
+        self.camera_x = max(0, min(self.camera_x, bg_width - SCREEN_WIDTH))
+        self.camera_y = max(0, min(self.camera_y, bg_height - SCREEN_HEIGHT))
+
     def create_objects(self):
         self.objects.append(pygame.Rect(300, 300, 50, 50))
         self.objects.append(pygame.Rect(600, 400, 60, 60))
@@ -57,9 +72,15 @@ class Game:
                 self.draw()
 
     def draw(self):
-        screen.fill(WHITE)
+        screen.blit(self.map_background, (0, 0), area=pygame.Rect(self.camera_x, self.camera_y, SCREEN_WIDTH, SCREEN_HEIGHT))
+        
         for obj in self.objects:
-            pygame.draw.rect(screen, BLUE, obj)
+            pygame.draw.rect(screen, BLUE, pygame.Rect(
+            obj.x - self.camera_x,
+            obj.y - self.camera_y,
+            obj.width,
+            obj.height
+            ))
         for npc in self.npcs:
             npc.draw(self.camera_x, self.camera_y)
         self.player.draw(self.camera_x, self.camera_y)

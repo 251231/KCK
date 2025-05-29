@@ -6,8 +6,18 @@ class StartScreen:
         self.background = pygame.image.load("assets/tlo2.png").convert()
         self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
-        self.play_button = pygame.Rect(580, 500, 400, 55)
-        self.quit_button = pygame.Rect(480, 580, 400, 55)
+        play_button_width = SCREEN_WIDTH * 0.3
+        play_button_height = SCREEN_HEIGHT * 0.07
+        play_button_x = (SCREEN_WIDTH - play_button_width) // 2
+        play_button_y = SCREEN_HEIGHT * 0.6
+
+        quit_button_width = SCREEN_WIDTH * 0.3
+        quit_button_height = SCREEN_HEIGHT * 0.07
+        quit_button_x = (SCREEN_WIDTH - quit_button_width) // 2
+        quit_button_y = SCREEN_HEIGHT * 0.7
+
+        self.play_button = pygame.Rect(play_button_x, play_button_y, play_button_width, play_button_height)
+        self.quit_button = pygame.Rect(quit_button_x, quit_button_y, quit_button_width, quit_button_height)
 
     def run(self):
         while True:
