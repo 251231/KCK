@@ -3,7 +3,7 @@ import os
 import hashlib
 
 # Ścieżka do bazy danych użytkowników
-USERS_DB_PATH = "../DataBase/users.json"
+USERS_DB_PATH = "DataBase/users.json"
 
 def hash_password(password):
     """
