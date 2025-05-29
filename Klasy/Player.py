@@ -13,20 +13,20 @@ class Player:
         self.load_data()
 
     def load_data(self):
-        if os.path.exists("../DataBase/user_data.json"):
-            with open("../DataBase/user_data.json", "r") as f:
+        if os.path.exists("DataBase/user_data.json"):
+            with open("DataBase/user_data.json", "r") as f:
                 data = json.load(f)
                 if self.name in data:
                     self.coins = data[self.name]["coins"]
 
     def save_data(self):
         data = {}
-        if os.path.exists("../DataBase/user_data.json"):
-            with open("../DataBase/user_data.json", "r") as f:
+        if os.path.exists("DataBase/user_data.json"):
+            with open("DataBase/user_data.json", "r") as f:
                 data = json.load(f)
 
         data[self.name] = {"coins": self.coins}
-        with open("../DataBase/user_data.json", "w") as f:
+        with open("DataBase/user_data.json", "w") as f:
             json.dump(data, f, indent=4)
 
     def move(self, dx, dy, delta_time, objects):

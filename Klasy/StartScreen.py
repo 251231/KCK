@@ -3,7 +3,7 @@ from config import *
 
 class StartScreen:
     def __init__(self):
-        self.background = pygame.image.load("../assets/tlo2.png").convert()
+        self.background = pygame.image.load("assets/tlo2.png").convert()
         self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
         self.play_button = pygame.Rect(580, 500, 400, 55)

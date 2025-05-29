@@ -2,7 +2,7 @@ from config import *
 
 
 
-USERS_DB_PATH = "../DataBase/users.json"
+USERS_DB_PATH = "DataBase/users.json"
 class UserInterface:
     def __init__(self, player):
         self.player = player
@@ -16,13 +16,13 @@ class UserInterface:
 
     def load_todo(self):
         """Wczytuje listę zadań z pliku JSON dla danego użytkownika."""
-        if os.path.exists(f"../DataBase/user_{self.player.name}_todo.json"):
-            with open(f"../DataBase/user_{self.player.name}_todo.json", "r") as f:
+        if os.path.exists(f"DataBase/user_{self.player.name}_todo.json"):
+            with open(f"DataBase/user_{self.player.name}_todo.json", "r") as f:
                 self.todo_items = json.load(f)
 
     def save_todo(self):
         """Zapisuje listę zadań do pliku JSON."""
-        with open(f"../DataBase/user_{self.player.name}_todo.json", "w") as f:
+        with open(f"DataBase/user_{self.player.name}_todo.json", "w") as f:
             json.dump(self.todo_items, f, indent=4)
 
     def draw(self):
