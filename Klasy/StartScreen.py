@@ -17,7 +17,11 @@ class StartScreen:
         quit_button_y = SCREEN_HEIGHT * 0.7
 
         self.play_button = pygame.Rect(play_button_x, play_button_y, play_button_width, play_button_height)
-        self.quit_button = pygame.Rect(quit_button_x, quit_button_y, quit_button_width, quit_button_height) 
+
+        self.quit_button = pygame.Rect(quit_button_x, quit_button_y, quit_button_width, quit_button_height)
+
+        
+
 
     def run(self):
         while True:
