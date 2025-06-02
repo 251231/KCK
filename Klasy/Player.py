@@ -29,18 +29,44 @@ class Player:
         with open("DataBase/user_data.json", "w") as f:
             json.dump(data, f, indent=4)
 
-    def move(self, dx, dy, delta_time, objects):
+    def move(self, dx, dy, delta_time, objects, collision_map_check=None):
         length = math.sqrt(dx ** 2 + dy ** 2)
         if length != 0:
             dx = (dx / length) * self.player_speed * delta_time * 100
             dy = (dy / length) * self.player_speed * delta_time * 100
 
-        self.rect.x += dx
-        if self.check_collision(objects):
-            self.rect.x -= dx
-        self.rect.y += dy
-        if self.check_collision(objects):
-            self.rect.y -= dy
+        # Sprawdź kolizję X
+        new_x = self.rect.x + dx
+        if collision_map_check:
+            # Sprawdź kilka punktów gracza (rogi prostokąta)
+            collision_x = (
+                collision_map_check(new_x, self.rect.y) or
+                collision_map_check(new_x + self.player_size, self.rect.y) or
+                collision_map_check(new_x, self.rect.y + self.player_size) or
+                collision_map_check(new_x + self.player_size, self.rect.y + self.player_size)
+            )
+            if not collision_x:
+                self.rect.x = new_x
+        else:
+            self.rect.x = new_x
+            if self.check_collision(objects):
+                self.rect.x -= dx
+
+        # Sprawdź kolizję Y
+        new_y = self.rect.y + dy
+        if collision_map_check:
+            collision_y = (
+                collision_map_check(self.rect.x, new_y) or
+                collision_map_check(self.rect.x + self.player_size, new_y) or
+                collision_map_check(self.rect.x, new_y + self.player_size) or
+                collision_map_check(self.rect.x + self.player_size, new_y + self.player_size)
+            )
+            if not collision_y:
+                self.rect.y = new_y
+        else:
+            self.rect.y = new_y
+            if self.check_collision(objects):
+                self.rect.y -= dy
 
     def check_collision(self, objects):
         for obj in objects:

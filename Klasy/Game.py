@@ -13,35 +13,48 @@ class Game:
         self.camera_y = 0
         self.objects = []
         self.npcs = [NPC(800, 600)]
-        self.create_objects()
         self.chat_mode = False
         self.chat_history = []
         self.chat_input = ""
-        self.quit_button = pygame.Rect(SCREEN_WIDTH - 210, SCREEN_HEIGHT - 70, 200,
-                                       50)
+        self.quit_button = pygame.Rect(SCREEN_WIDTH - 210, SCREEN_HEIGHT - 70, 200,50)
         self.ui = UserInterface(self.player)
         original_bg = pygame.image.load("assets/Glowna_mapa.png").convert()
         original_width, original_height = original_bg.get_size()
-        scaled_bg = pygame.transform.scale(original_bg, (SCREEN_WIDTH, original_height))
+        scaled_bg = pygame.transform.scale(original_bg, (original_width*2, original_height*2))
         self.map_background = scaled_bg
 
 
-    def update(self, dx, dy, delta_time):
-        """Aktualizacja gry (ruch gracza i kolizje)."""
-        self.player.move(dx, dy, delta_time, self.objects)
+        collision_map = pygame.image.load("assets/Glowna_mapa_kolizje.png").convert()
+        self.collision_map = pygame.transform.scale(collision_map, (original_width*2, original_height*2))
+        
+        # Nie potrzebujesz już create_objects() - kolizje są w mapie
+        self.objects = []
 
-        # Oblicz kamerę, tak by gracz był na środku ekranu
+
+    def update(self, dx, dy, delta_time):
+        self.player.move(dx, dy, delta_time, self.objects, self.check_collision_on_map)
+
+        
         self.camera_x = self.player.rect.centerx - SCREEN_WIDTH // 2
         self.camera_y = self.player.rect.centery - SCREEN_HEIGHT // 2
 
-        # Ogranicz kamerę do granic mapy (jeśli nie chcesz pokazywać "czarnego")
+        
         bg_width, bg_height = self.map_background.get_size()
         self.camera_x = max(0, min(self.camera_x, bg_width - SCREEN_WIDTH))
         self.camera_y = max(0, min(self.camera_y, bg_height - SCREEN_HEIGHT))
 
-    def create_objects(self):
-        self.objects.append(pygame.Rect(300, 300, 50, 50))
-        self.objects.append(pygame.Rect(600, 400, 60, 60))
+    def check_collision_on_map(self, x, y):
+        
+        if x < 0 or y < 0 or x >= self.collision_map.get_width() or y >= self.collision_map.get_height():
+            return True  
+        
+        
+        try:
+            pixel_color = self.collision_map.get_at((int(x), int(y)))
+           
+            return pixel_color[0] < 128  
+        except:
+            return True 
 
     def handle_input(self):
         keys = pygame.key.get_pressed()
@@ -65,7 +78,7 @@ class Game:
     def run(self):
         while self.running:
             while self.running:
-                delta_time = self.clock.tick(60) / 1000  # Czas między klatkami w sekundach
+                delta_time = self.clock.tick(60) / 1000  
                 self.handle_events()
                 dx, dy = self.handle_input()
                 self.update(dx, dy, delta_time)
