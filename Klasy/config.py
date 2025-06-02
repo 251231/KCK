@@ -9,7 +9,7 @@ import openai
 
 
 openai.api_key = "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"
-
+GRAY = (128,128,128)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
