@@ -30,71 +30,67 @@ class Player:
             json.dump(data, f, indent=4)
 
     def move(self, dx, dy, delta_time, objects, collision_map_check=None):
+        # Oblicz rzeczywisty ruch z normalizacją
         length = math.sqrt(dx ** 2 + dy ** 2)
-        if length != 0:
-            dx = (dx / length) * self.player_speed * delta_time * 100
-            dy = (dy / length) * self.player_speed * delta_time * 100
+        if length == 0:
+            return
+            
+        # Normalizuj wektor ruchu
+        dx = (dx / length) * self.player_speed * delta_time * 100
+        dy = (dy / length) * self.player_speed * delta_time * 100
 
+        # Sprawdź kolizję w osi X
+        self.move_axis(dx, 0, collision_map_check, objects)
+        
+        # Sprawdź kolizję w osi Y
+        self.move_axis(0, dy, collision_map_check, objects)
 
-        # Sprawdź kolizję X
-        new_x = self.rect.x + dx
+    def move_axis(self, dx, dy, collision_map_check, objects):
+        """Porusza gracza w jednej osi z dokładnym sprawdzaniem kolizji"""
+        if dx == 0 and dy == 0:
+            return
+            
+        # Zapisz aktualną pozycję
+        old_x = self.rect.x
+        old_y = self.rect.y
+        
+        # Oblicz nową pozycję
+        new_x = old_x + dx
+        new_y = old_y + dy
+        
+        # Ustaw nową pozycję
+        self.rect.x = new_x
+        self.rect.y = new_y
+        
+        # Sprawdź kolizje
+        collision_detected = False
+        
+        # 1. Sprawdź kolizje z mapą (czarne piksele)
         if collision_map_check:
             # Sprawdź kilka punktów gracza (rogi prostokąta)
-            collision_x = (
-                collision_map_check(new_x, self.rect.y) or
-                collision_map_check(new_x + self.player_size, self.rect.y) or
-                collision_map_check(new_x, self.rect.y + self.player_size) or
-                collision_map_check(new_x + self.player_size, self.rect.y + self.player_size)
-            )
-            if not collision_x:
-                self.rect.x = new_x
-        else:
-            self.rect.x = new_x
-            if self.check_collision(objects):
-                self.rect.x -= dx
-
-        # Sprawdź kolizję Y
-        new_y = self.rect.y + dy
-        if collision_map_check:
-            collision_y = (
-                collision_map_check(self.rect.x, new_y) or
-                collision_map_check(self.rect.x + self.player_size, new_y) or
-                collision_map_check(self.rect.x, new_y + self.player_size) or
-                collision_map_check(self.rect.x + self.player_size, new_y + self.player_size)
-            )
-            if not collision_y:
-                self.rect.y = new_y
-        else:
-            self.rect.y = new_y
-            if self.check_collision(objects):
-                self.rect.y -= dy
-
-        self.move_axis(dx, 0, objects)
-        self.move_axis(0, dy, objects)
-
-    def move_axis(self, dx, dy, objects):
-        distance = math.hypot(dx, dy)
-        if distance == 0:
-            return
-
-        step = 1  # krok 1 px dla dokładności (można użyć np. 0.5 dla większej precyzji)
-        steps = int(distance // step)
-        if steps == 0:
-            steps = 1
-
-        step_dx = dx / steps
-        step_dy = dy / steps
-
-        for _ in range(steps):
-            self.rect.x += step_dx
-            self.rect.y += step_dy
-            if self.check_collision(objects):
-                self.rect.x -= step_dx
-                self.rect.y -= step_dy
-                break 
-
+            collision_points = [
+                (self.rect.x, self.rect.y),  # lewy górny róg
+                (self.rect.x + self.player_size - 1, self.rect.y),  # prawy górny róg
+                (self.rect.x, self.rect.y + self.player_size - 1),  # lewy dolny róg
+                (self.rect.x + self.player_size - 1, self.rect.y + self.player_size - 1)  # prawy dolny róg
+            ]
+            
+            for point_x, point_y in collision_points:
+                if collision_map_check(point_x, point_y):
+                    collision_detected = True
+                    break
+        
+        # 2. Sprawdź kolizje z obiektami
+        if not collision_detected and objects:
+            collision_detected = self.check_collision(objects)
+        
+        # Jeśli wykryto kolizję, cofnij ruch
+        if collision_detected:
+            self.rect.x = old_x
+            self.rect.y = old_y
 
     def check_collision(self, objects):
+        """Sprawdza kolizję z listą obiektów"""
         for obj in objects:
             if self.rect.colliderect(obj):
                 return True

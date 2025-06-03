@@ -8,7 +8,7 @@ from RegisterRoom import RegisterRoom
 from MainRoom import MainRoom
 from FeeRoom import FeeRoom
 from DataRoom import DataRoom
-
+from Room import Room
 
 
 class Game:
