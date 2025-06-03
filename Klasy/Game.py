@@ -2,14 +2,13 @@ from config import *
 from UserInterface import UserInterface
 from Player import Player
 from NPC import NPC, get_ai_response
-
 from GameRoom import GameRoom
 from RegisterRoom import RegisterRoom
 from MainRoom import MainRoom
 from FeeRoom import FeeRoom
 from DataRoom import DataRoom
 from Room import Room
-
+from DiceGame import DiceGame
 
 class Game:
     def __init__(self, username):
@@ -26,24 +25,25 @@ class Game:
         
         # Inicjalizacja pokoi
         self.init_rooms()
-        self.current_room= self.rooms["MainRoom"]
+        self.current_room = self.rooms["MainRoom"]
         
         # Cooldown dla teleportacji (żeby nie teleportować się wielokrotnie)
         self.teleport_cooldown = 0
+
+        # Dodatkowe atrybuty z DiceGame
+        self.dice_game = DiceGame(self.player)
+        self.in_dice_game = False
+        self.automat_rect = pygame.Rect(1000, 700, 50, 50)
+        self.interaction_hint = None
 
     def init_rooms(self):
         self.rooms = {
             "MainRoom": MainRoom(),
             "GameRoom": GameRoom(),
             "RegisterRoom": RegisterRoom(),
-            "FeeRoom":FeeRoom(),
-            "DataRoom":DataRoom()
+            "FeeRoom": FeeRoom(),
+            "DataRoom": DataRoom()
         }
-
-   
-            
-           
-
 
     def update(self, dx, dy, delta_time):
         # Aktualizuj cooldown teleportacji
@@ -59,6 +59,14 @@ class Game:
         # Sprawdź teleportację (tylko jeśli cooldown minął)
         if self.teleport_cooldown <= 0:
             self.check_room_transitions()
+
+        # Obsługa podpowiedzi interakcji
+        if self.player.rect.colliderect(self.automat_rect.inflate(100, 100)):
+            self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać"
+        elif any(self.player.rect.colliderect(npc.rect.inflate(100, 100)) for npc in self.current_room.npcs):
+            self.interaction_hint = "Naciśnij SPACJĘ, aby porozmawiać"
+        else:
+            self.interaction_hint = None
 
     def update_camera(self):
         """Aktualizuje pozycję kamery"""
@@ -113,33 +121,61 @@ class Game:
         return dx, dy
 
     def draw_chat(self):
-        pygame.draw.rect(screen, (200, 200, 200), (50, SCREEN_HEIGHT - 250, SCREEN_WIDTH - 100, 200))
+        chat_box = pygame.Rect(50, SCREEN_HEIGHT - 250, SCREEN_WIDTH - 100, 200)
+        pygame.draw.rect(screen, (200, 200, 200), chat_box, border_radius=12)
         y = SCREEN_HEIGHT - 240
-        for line in self.chat_history[-5:]:
+        for line in self.wrap_chat_text(self.chat_history[-5:], SCREEN_WIDTH - 120):
             line_text = font.render(line, True, BLACK)
             screen.blit(line_text, (60, y))
             y += 30
         input_text = font.render("Ty: " + self.chat_input, True, BLACK)
         screen.blit(input_text, (60, y))
 
+    def wrap_chat_text(self, lines, max_width):
+        wrapped_lines = []
+        for line in lines:
+            words = line.split()
+            wrapped = ""
+            for word in words:
+                test_line = wrapped + word + " "
+                if font.size(test_line)[0] > max_width:
+                    wrapped_lines.append(wrapped.strip())
+                    wrapped = word + " "
+                else:
+                    wrapped = test_line
+            if wrapped:
+                wrapped_lines.append(wrapped.strip())
+        return wrapped_lines
+
     def run(self):
         while self.running:
-            delta_time = self.clock.tick(60) / 1000  
+            delta_time = self.clock.tick(60) / 1000
             self.handle_events()
             dx, dy = self.handle_input()
             self.update(dx, dy, delta_time)
             self.draw()
 
     def draw(self):
+        # Rysuj tło pokoju
         self.current_room.draw(screen, self.camera_x, self.camera_y)
         self.player.draw(self.camera_x, self.camera_y)
         self.ui.draw()
+
         if self.chat_mode:
             self.draw_chat()
 
+        # Podpowiedzi interakcji i gra w kości
+        if self.interaction_hint and not self.in_dice_game:
+            hint_box = pygame.Rect(SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT - 70, 400, 40)
+            pygame.draw.rect(screen, (255, 255, 224), hint_box, border_radius=12)
+            hint_text = font.render(self.interaction_hint, True, BLACK)
+            screen.blit(hint_text, (hint_box.x + 20, hint_box.y + 10))
+
+        if self.in_dice_game:
+            self.dice_game.draw()
+
         # Debug info
-        x, y = int(self.player.rect.x), int(self.player.rect.y)
-        coords_text = font.render(f"X: {x} Y: {y}", True,WHITE)
+        coords_text = font.render(f"X: {int(self.player.rect.x)}, Y: {int(self.player.rect.y)}", True, BLACK)
         screen.blit(coords_text, (10, 10))
         
         # Pokazuj aktualny pokój
@@ -158,11 +194,8 @@ class Game:
 
         # Kursor myszy
         mouse_pos = pygame.mouse.get_pos()
-        if self.quit_button.collidepoint(mouse_pos):
-            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
-        else:
-            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-            
+        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND if self.quit_button.collidepoint(mouse_pos) else pygame.SYSTEM_CURSOR_ARROW)
+
         pygame.display.flip()
 
     def get_current_room_name(self):
@@ -179,7 +212,13 @@ class Game:
                 self.running = False
 
             elif event.type == pygame.KEYDOWN:
-                if self.chat_mode:
+                if self.in_dice_game:
+                    # Przekaż zdarzenie do gry w kości
+                    self.dice_game.handle_event(event)
+                    # Sprawdź czy gracz chce wyjść z gry
+                    if not self.dice_game.in_game:
+                        self.in_dice_game = False
+                elif self.chat_mode:
                     if event.key == pygame.K_RETURN:
                         if self.chat_input.strip():
                             self.chat_history.append("Ty: " + self.chat_input)
@@ -193,10 +232,11 @@ class Game:
                     else:
                         self.chat_input += event.unicode
                 else:
-                    # Tryb normalny
                     self.ui.handle_todo_event(event)
                     if event.key == pygame.K_SPACE:
-                        # Sprawdź czy jesteś blisko jakiegoś NPC w aktualnym pokoju
+                        if self.player.rect.colliderect(self.automat_rect.inflate(100, 100)):
+                            self.in_dice_game = True
+                            self.dice_game.reset_game()
                         for npc in self.current_room.npcs:
                             if self.player.rect.colliderect(npc.rect.inflate(100, 100)):
                                 self.chat_mode = True
@@ -204,8 +244,18 @@ class Game:
                                 break
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.quit_button.collidepoint(event.pos):
+                if self.in_dice_game:
+                    # Przekaż zdarzenie myszy do gry w kości
+                    self.dice_game.handle_event(event)
+                    # Sprawdź czy gracz chce wyjść z gry
+                    if not self.dice_game.in_game:
+                        self.in_dice_game = False
+                elif self.quit_button.collidepoint(event.pos):
                     self.player.save_data()
                     self.running = False
                 else:
                     self.ui.handle_todo_click(event.pos)
+
+            # Obsługa zdarzeń timera dla animacji gry w kości
+            elif self.in_dice_game:
+                self.dice_game.handle_event(event)
