@@ -14,6 +14,7 @@ from FeeRoom import FeeRoom
 from DataRoom import DataRoom
 from Room import Room
 from DiceGame import DiceGame
+from CupsGame import CupsGame
 
 class Game:
     def __init__(self, username):
@@ -38,7 +39,12 @@ class Game:
         # Dodatkowe atrybuty z DiceGame
         self.dice_game = DiceGame(self.player)
         self.in_dice_game = False
+
+        self.cups_game = CupsGame(self.player)
+        self.in_cups_game = False
+
         self.automat_rect = pygame.Rect(1000, 700, 50, 50)
+        self.cups_table_rect = pygame.Rect(800, 600, 60, 60)
         self.interaction_hint = None
 
     def init_rooms(self):
@@ -68,6 +74,8 @@ class Game:
         # Obsługa podpowiedzi interakcji
         if self.player.rect.colliderect(self.automat_rect.inflate(100, 100)):
             self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać"
+        elif self.player.rect.colliderect(self.cups_table_rect.inflate(100, 100)):
+            self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w kubki"
         elif any(self.player.rect.colliderect(npc.rect.inflate(100, 100)) for npc in self.current_room.npcs):
             self.interaction_hint = "Naciśnij SPACJĘ, aby porozmawiać"
         else:
@@ -170,7 +178,7 @@ class Game:
             self.draw_chat()
 
         # Podpowiedzi interakcji i gra w kości
-        if self.interaction_hint and not self.in_dice_game:
+        if self.interaction_hint and not self.in_dice_game and not self.in_cups_game:
             hint_box = pygame.Rect(SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT - 70, 400, 40)
             pygame.draw.rect(screen, (255, 255, 224), hint_box, border_radius=12)
             hint_text = font.render(self.interaction_hint, True, BLACK)
@@ -178,7 +186,28 @@ class Game:
 
         if self.in_dice_game:
             self.dice_game.draw()
-
+        elif self.in_cups_game:
+            self.cups_game.draw()
+        cups_table_screen_pos = (
+            self.cups_table_rect.x - self.camera_x,
+            self.cups_table_rect.y - self.camera_y
+        )
+        if (0 <= cups_table_screen_pos[0] <= SCREEN_WIDTH and 
+            0 <= cups_table_screen_pos[1] <= SCREEN_HEIGHT):
+            
+            # Rysuj stół
+            pygame.draw.rect(screen, (139, 69, 19), 
+                           (*cups_table_screen_pos, self.cups_table_rect.width, self.cups_table_rect.height))
+            pygame.draw.rect(screen, (101, 67, 33), 
+                           (*cups_table_screen_pos, self.cups_table_rect.width, self.cups_table_rect.height), 3)
+            
+            # Dodaj tekst "KUBKI"
+            table_text = font.render("KUBKI", True, (255, 215, 0))
+            text_rect = table_text.get_rect(center=(
+                cups_table_screen_pos[0] + self.cups_table_rect.width // 2,
+                cups_table_screen_pos[1] + self.cups_table_rect.height // 2
+            ))
+            screen.blit(table_text, text_rect)
         # Debug info
         coords_text = font.render(f"X: {int(self.player.rect.x)}, Y: {int(self.player.rect.y)}", True, BLACK)
         screen.blit(coords_text, (10, 10))
@@ -217,12 +246,16 @@ class Game:
                 self.running = False
 
             elif event.type == pygame.KEYDOWN:
+                # ZMODYFIKUJ: Obsługa gier
                 if self.in_dice_game:
-                    # Przekaż zdarzenie do gry w kości
                     self.dice_game.handle_event(event)
-                    # Sprawdź czy gracz chce wyjść z gry
                     if not self.dice_game.in_game:
                         self.in_dice_game = False
+                elif self.in_cups_game:
+                    # DODAJ: Obsługa gry w kubki
+                    self.cups_game.handle_event(event)
+                    if not self.cups_game.in_game:
+                        self.in_cups_game = False
                 elif self.chat_mode:
                     if event.key == pygame.K_RETURN:
                         if self.chat_input.strip():
@@ -242,6 +275,9 @@ class Game:
                         if self.player.rect.colliderect(self.automat_rect.inflate(100, 100)):
                             self.in_dice_game = True
                             self.dice_game.reset_game()
+                        elif self.player.rect.colliderect(self.cups_table_rect.inflate(100, 100)):
+                            self.in_cups_game = True
+                            self.cups_game.reset_game()
                         for npc in self.current_room.npcs:
                             if self.player.rect.colliderect(npc.rect.inflate(100, 100)):
                                 self.chat_mode = True
@@ -250,17 +286,22 @@ class Game:
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.in_dice_game:
-                    # Przekaż zdarzenie myszy do gry w kości
                     self.dice_game.handle_event(event)
-                    # Sprawdź czy gracz chce wyjść z gry
                     if not self.dice_game.in_game:
                         self.in_dice_game = False
+                elif self.in_cups_game:
+                    self.cups_game.handle_event(event)
+                    if not self.cups_game.in_game:
+                        self.in_cups_game = False
                 elif self.quit_button.collidepoint(event.pos):
                     self.player.save_data()
                     self.running = False
                 else:
                     self.ui.handle_todo_click(event.pos)
 
-            # Obsługa zdarzeń timera dla animacji gry w kości
+            # Handle other events for games (removed the problematic line)
             elif self.in_dice_game:
                 self.dice_game.handle_event(event)
+            elif self.in_cups_game:
+                # Fixed: Use handle_event instead of handle_timer_event
+                self.cups_game.handle_event(event)
