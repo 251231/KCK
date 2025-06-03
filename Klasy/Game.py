@@ -26,7 +26,7 @@ class Game:
         
         # Inicjalizacja pokoi
         self.init_rooms()
-        self.current_room = self.rooms["MainRoom"]
+        self.current_room= self.rooms["MainRoom"]
         
         # Cooldown dla teleportacji (żeby nie teleportować się wielokrotnie)
         self.teleport_cooldown = 0
@@ -139,7 +139,7 @@ class Game:
 
         # Debug info
         x, y = int(self.player.rect.x), int(self.player.rect.y)
-        coords_text = font.render(f"X: {x}, Y: {y}", True, BLACK)
+        coords_text = font.render(f"X: {x} Y: {y}", True,WHITE)
         screen.blit(coords_text, (10, 10))
         
         # Pokazuj aktualny pokój
