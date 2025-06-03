@@ -35,6 +35,7 @@ class Player:
             dx = (dx / length) * self.player_speed * delta_time * 100
             dy = (dy / length) * self.player_speed * delta_time * 100
 
+
         # Sprawdź kolizję X
         new_x = self.rect.x + dx
         if collision_map_check:
@@ -67,6 +68,31 @@ class Player:
             self.rect.y = new_y
             if self.check_collision(objects):
                 self.rect.y -= dy
+
+        self.move_axis(dx, 0, objects)
+        self.move_axis(0, dy, objects)
+
+    def move_axis(self, dx, dy, objects):
+        distance = math.hypot(dx, dy)
+        if distance == 0:
+            return
+
+        step = 1  # krok 1 px dla dokładności (można użyć np. 0.5 dla większej precyzji)
+        steps = int(distance // step)
+        if steps == 0:
+            steps = 1
+
+        step_dx = dx / steps
+        step_dy = dy / steps
+
+        for _ in range(steps):
+            self.rect.x += step_dx
+            self.rect.y += step_dy
+            if self.check_collision(objects):
+                self.rect.x -= step_dx
+                self.rect.y -= step_dy
+                break 
+
 
     def check_collision(self, objects):
         for obj in objects:
