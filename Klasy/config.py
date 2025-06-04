@@ -18,7 +18,7 @@ BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 
 player_speed = 7
-player_size = 40
+player_size = 90
 pygame.init()
 pygame.display.set_caption("GameDziekanat")
 font = pygame.font.SysFont('Arial', 24)
