@@ -10,7 +10,49 @@ class Player:
         self.player_size = player_size
         self.rect = pygame.Rect(self.x, self.y, self.player_size, self.player_size)
         self.coins = 0
+        
+        # Animacja
+        self.animation_frames = []
+        self.current_frame = 0
+        self.animation_speed = 0.3  # Szybkość animacji (im mniej tym szybciej)
+        self.animation_timer = 0
+        self.is_moving = False
+        self.facing_right = True
+        
+        # Wczytaj klatki animacji
+        self.load_animation_frames()
         self.load_data()
+
+    def load_animation_frames(self):
+        """Wczytuje 8 klatek animacji z plików klatka1.png do klatka8.png"""
+        try:
+            for i in range(1, 9):  # klatka1 do klatka8
+                frame_path = f"assets/klatka{i}.png"  # Zakładam że pliki są w głównym folderze
+                if os.path.exists(frame_path):
+                    frame = pygame.image.load(frame_path).convert_alpha()
+                    # Przeskaluj klatkę do rozmiaru gracza
+                    frame = pygame.transform.scale(frame, (self.player_size, self.player_size))
+                    self.animation_frames.append(frame)
+                else:
+                    print(f"Ostrzeżenie: Nie znaleziono pliku {frame_path}")
+                    # Stwórz prostą klatkę zastępczą
+                    placeholder = pygame.Surface((self.player_size, self.player_size))
+                    placeholder.fill(GREEN)
+                    self.animation_frames.append(placeholder)
+        except Exception as e:
+            print(f"Błąd podczas wczytywania klatek animacji: {e}")
+            # Stwórz domyślne klatki jeśli nie udało się wczytać
+            self.create_default_frames()
+
+    def create_default_frames(self):
+        """Tworzy domyślne klatki animacji jeśli nie udało się wczytać plików"""
+        self.animation_frames = []
+        for i in range(8):
+            frame = pygame.Surface((self.player_size, self.player_size))
+            # Różne odcienie zieleni dla każdej klatki
+            green_shade = (0, 255 - i * 20, 0)
+            frame.fill(green_shade)
+            self.animation_frames.append(frame)
 
     def load_data(self):
         if os.path.exists("DataBase/user_data.json"):
@@ -30,6 +72,15 @@ class Player:
             json.dump(data, f, indent=4)
 
     def move(self, dx, dy, delta_time, objects, collision_map_check=None):
+        # Sprawdź czy gracz się porusza
+        self.is_moving = (dx != 0 or dy != 0)
+        
+        # Ustaw kierunek patrzenia
+        if dx > 0:
+            self.facing_right = True
+        elif dx < 0:
+            self.facing_right = False
+        
         # Oblicz rzeczywisty ruch z normalizacją
         length = math.sqrt(dx ** 2 + dy ** 2)
         if length == 0:
@@ -44,6 +95,23 @@ class Player:
         
         # Sprawdź kolizję w osi Y
         self.move_axis(0, dy, collision_map_check, objects)
+        
+        # Aktualizuj animację
+        self.update_animation(delta_time)
+
+    def update_animation(self, delta_time):
+        """Aktualizuje animację postaci"""
+        if self.is_moving and len(self.animation_frames) > 0:
+            self.animation_timer += delta_time
+            
+            # Zmień klatkę gdy timer przekroczy próg
+            if self.animation_timer >= self.animation_speed:
+                self.current_frame = (self.current_frame + 1) % len(self.animation_frames)
+                self.animation_timer = 0
+        else:
+            # Gdy nie porusza się, ustaw pierwszą klatkę
+            self.current_frame = 0
+            self.animation_timer = 0
 
     def move_axis(self, dx, dy, collision_map_check, objects):
         """Porusza gracza w jednej osi z dokładnym sprawdzaniem kolizji"""
@@ -97,4 +165,31 @@ class Player:
         return False
 
     def draw(self, camera_x, camera_y):
-        pygame.draw.rect(screen, GREEN, (self.rect.x - camera_x, self.rect.y - camera_y, self.player_size, self.player_size))
+        """Rysuje gracza z animacją"""
+        if len(self.animation_frames) > 0:
+            # Pobierz aktualną klatkę animacji
+            current_sprite = self.animation_frames[self.current_frame]
+            
+            # Odbij sprite jeśli gracz idzie w lewo
+            if not self.facing_right:
+                current_sprite = pygame.transform.flip(current_sprite, True, False)
+            
+            # Narysuj sprite
+            screen.blit(current_sprite, (self.rect.x - camera_x, self.rect.y - camera_y))
+        else:
+            # Fallback - rysuj prostokąt jeśli nie ma sprite'ów
+            pygame.draw.rect(screen, GREEN, (self.rect.x - camera_x, self.rect.y - camera_y, self.player_size, self.player_size))
+
+    def set_animation_speed(self, speed):
+        """Pozwala zmienić szybkość animacji"""
+        self.animation_speed = speed
+
+    def get_animation_info(self):
+        """Zwraca informacje o animacji (do debugowania)"""
+        return {
+            "current_frame": self.current_frame + 1,
+            "total_frames": len(self.animation_frames),
+            "is_moving": self.is_moving,
+            "facing_right": self.facing_right,
+            "animation_timer": self.animation_timer
+        }

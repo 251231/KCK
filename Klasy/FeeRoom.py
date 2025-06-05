@@ -12,7 +12,7 @@ class FeeRoom(Room):
                 },
                 entry_points={
                     "default": (100, 100),
-                    "from_main": (1345, 634),    # Gdzie gracz pojawia się przychodząc z MainRoom
+                    "from_main": (1345, 600),    # Gdzie gracz pojawia się przychodząc z MainRoom
                     
                 }
             ),
