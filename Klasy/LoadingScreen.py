@@ -36,7 +36,7 @@ class LoadingScreen:
         self.animation_frames = []
         self.current_frame = 0
         self.frame_time = 0
-        self.frame_duration = 0.1  # 100ms na klatkę (10 FPS)
+        self.frame_duration = 0.2  # 100ms na klatkę (10 FPS)
         self.load_animation_frames()
         
         # Teksty do wyświetlania podczas ładowania
