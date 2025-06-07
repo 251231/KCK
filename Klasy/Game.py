@@ -15,6 +15,7 @@ from DataRoom import DataRoom
 from Room import Room
 from DiceGame import DiceGame
 from CupsGame import CupsGame
+from WheelOfFortuneGame import WheelOfFortuneGame
 
 
 class Game:
@@ -42,8 +43,12 @@ class Game:
         self.cups_game = CupsGame(self.player)
         self.in_cups_game = False
 
+        self.wheel_game = WheelOfFortuneGame(self.player)
+        self.in_wheel_game = False
+
         self.automat_rect = pygame.Rect(1000, 700, 50, 50)
         self.cups_table_rect = pygame.Rect(800, 600, 60, 60)
+        self.wheel_rect = pygame.Rect(600, 600, 60, 60)
 
         self.interaction_hint = None
 
@@ -73,7 +78,10 @@ class Game:
         # Jeśli jesteśmy w interakcji, nie aktualizuj gry głównej
         if self.is_in_any_interaction():
             return
-            
+        
+        if self.in_wheel_game:
+            return
+
         # Aktualizuj cooldown teleportacji
         if self.teleport_cooldown > 0:
             self.teleport_cooldown -= delta_time
@@ -99,6 +107,8 @@ class Game:
             self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w kubki"
         elif any(self.player.rect.colliderect(npc.rect.inflate(100, 100)) for npc in self.current_room.npcs):
             self.interaction_hint = "Naciśnij SPACJĘ, aby porozmawiać"
+        elif self.player.rect.colliderect(self.wheel_rect.inflate(100, 100)):
+            self.interaction_hint = "Naciśnij SPACJĘ, aby zakręcić kołem"
         else:
             self.interaction_hint = None
         
@@ -179,7 +189,11 @@ class Game:
             self.cups_game.draw()
             pygame.display.flip()
             return
-        
+        if self.in_wheel_game and self.get_current_room_name() == "GameRoom":
+            self.wheel_game.draw()
+            pygame.display.flip()
+            return
+  
         # Jeśli jakiś NPC ma aktywne okno czatu, rysuj tylko okno czatu
         for npc in self.current_room.npcs:
             if npc.chat_window.active:
@@ -230,6 +244,14 @@ class Game:
             ))
             screen.blit(table_text, text_rect)
 
+        # Rysuj strefę koła fortuny tylko w GameRoom
+        if self.get_current_room_name() == "GameRoom":
+            wheel_pos = (self.wheel_rect.x - self.camera_x, self.wheel_rect.y - self.camera_y)
+            pygame.draw.rect(screen, (0, 100, 200), (*wheel_pos, self.wheel_rect.width, self.wheel_rect.height))
+            wheel_text = font.render("KOŁO", True, (255, 255, 0))
+            screen.blit(wheel_text, (wheel_pos[0], wheel_pos[1] - 20))
+
+
         # Debug info
         coords_text = font.render(f"X: {int(self.player.rect.x)}, Y: {int(self.player.rect.y)}", True, BLACK)
         screen.blit(coords_text, (10, 10))
@@ -277,6 +299,13 @@ class Game:
                 if not self.cups_game.in_game:
                     self.in_cups_game = False
                 continue
+            
+            elif self.in_wheel_game:
+                self.wheel_game.handle_event(event)
+                if not self.wheel_game.in_game:
+                    self.in_wheel_game = False
+                continue
+
 
             # Sprawdź czy jakiś NPC ma aktywne okno czatu
             any_npc_handled = False
@@ -301,6 +330,14 @@ class Game:
                     elif self.player.rect.colliderect(self.cups_table_rect.inflate(100, 100)):
                         self.in_cups_game = True
                         self.cups_game.reset_game()
+                    elif (
+                        self.get_current_room_name() == "GameRoom" and 
+                        self.player.rect.colliderect(self.wheel_rect.inflate(100, 100))
+                    ):
+                        self.in_wheel_game = True
+                        self.wheel_game.reset_game()
+
+
                     # Sprawdź interakcję z NPCs
                     else:
                         for npc in self.current_room.npcs:
