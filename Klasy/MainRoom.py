@@ -17,7 +17,7 @@ class MainRoom(Room):
                     "default": (400, 400),
                     "from_game": (805, 220),    # Gdzie gracz pojawia się wracając z GameRoom
                     "from_register":(211,538),
-                    "from_fee":(211,1390),
+                    "from_fee":(211,1330),
                     "from_data":(1420,575)
                 }
             ),

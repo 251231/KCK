@@ -24,9 +24,7 @@ class Game:
         self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, None, username)
         self.camera_x = 0
         self.camera_y = 0
-        self.chat_mode = False
-        self.chat_history = []
-        self.chat_input = ""
+        # Usunięte stary system czatu
         self.quit_button = pygame.Rect(SCREEN_WIDTH - 210, SCREEN_HEIGHT - 70, 200, 50)
         self.ui = UserInterface(self.player)
         
@@ -40,8 +38,6 @@ class Game:
         # Dodatkowe atrybuty z DiceGame
         self.dice_game = DiceGame(self.player)
         self.in_dice_game = False
-
-
 
         self.cups_game = CupsGame(self.player)
         self.in_cups_game = False
@@ -60,13 +56,34 @@ class Game:
             "DataRoom": DataRoom()
         }
 
+    def is_in_any_interaction(self):
+        """Sprawdza czy gracz jest w jakiejkolwiek interakcji (minigra lub rozmowa z NPC)"""
+        # Sprawdź minigry
+        if self.in_dice_game or self.in_cups_game:
+            return True
+        
+        # Sprawdź czy jakiś NPC ma aktywne okno czatu
+        for npc in self.current_room.npcs:
+            if npc.chat_window.active:
+                return True
+        
+        return False
+
     def update(self, dx, dy, delta_time):
+        # Jeśli jesteśmy w interakcji, nie aktualizuj gry głównej
+        if self.is_in_any_interaction():
+            return
+            
         # Aktualizuj cooldown teleportacji
         if self.teleport_cooldown > 0:
             self.teleport_cooldown -= delta_time
             
         # Porusz gracza
         self.player.move(dx, dy, delta_time, self.current_room.objects, self.current_room.check_collision)
+        
+        # Aktualizuj NPCs w aktualnym pokoju
+        for npc in self.current_room.npcs:
+            npc.update()
         
         # Aktualizuj kamerę
         self.update_camera()
@@ -84,7 +101,7 @@ class Game:
             self.interaction_hint = "Naciśnij SPACJĘ, aby porozmawiać"
         else:
             self.interaction_hint = None
-
+        
     def update_camera(self):
         """Aktualizuje pozycję kamery"""
         self.camera_x = self.player.rect.centerx - SCREEN_WIDTH // 2
@@ -129,6 +146,10 @@ class Game:
             self.update_camera()
 
     def handle_input(self):
+        # Jeśli jesteśmy w interakcji, nie obsługuj ruchu gracza
+        if self.is_in_any_interaction():
+            return 0, 0
+            
         keys = pygame.key.get_pressed()
         dx, dy = 0, 0
         if keys[pygame.K_LEFT] or keys[pygame.K_a]: dx = -1
@@ -136,33 +157,6 @@ class Game:
         if keys[pygame.K_UP] or keys[pygame.K_w]: dy = -1
         if keys[pygame.K_DOWN] or keys[pygame.K_s]: dy = 1
         return dx, dy
-
-    def draw_chat(self):
-        chat_box = pygame.Rect(50, SCREEN_HEIGHT - 250, SCREEN_WIDTH - 100, 200)
-        pygame.draw.rect(screen, (200, 200, 200), chat_box, border_radius=12)
-        y = SCREEN_HEIGHT - 240
-        for line in self.wrap_chat_text(self.chat_history[-5:], SCREEN_WIDTH - 120):
-            line_text = font.render(line, True, BLACK)
-            screen.blit(line_text, (60, y))
-            y += 30
-        input_text = font.render("Ty: " + self.chat_input, True, BLACK)
-        screen.blit(input_text, (60, y))
-
-    def wrap_chat_text(self, lines, max_width):
-        wrapped_lines = []
-        for line in lines:
-            words = line.split()
-            wrapped = ""
-            for word in words:
-                test_line = wrapped + word + " "
-                if font.size(test_line)[0] > max_width:
-                    wrapped_lines.append(wrapped.strip())
-                    wrapped = word + " "
-                else:
-                    wrapped = test_line
-            if wrapped:
-                wrapped_lines.append(wrapped.strip())
-        return wrapped_lines
 
     def run(self):
         while self.running:
@@ -173,28 +167,48 @@ class Game:
             self.draw()
 
     def draw(self):
+        # Wyczyść ekran
+        screen.fill(BLACK)
+        
+        # Jeśli jesteśmy w minigre, rysuj tylko minigrę
+        if self.in_dice_game:
+            self.dice_game.draw()
+            pygame.display.flip()
+            return
+        elif self.in_cups_game:
+            self.cups_game.draw()
+            pygame.display.flip()
+            return
+        
+        # Jeśli jakiś NPC ma aktywne okno czatu, rysuj tylko okno czatu
+        for npc in self.current_room.npcs:
+            if npc.chat_window.active:
+                npc.draw_chat_only()
+                pygame.display.flip()
+                return
+        
+        # Rysuj normalną grę tylko jeśli nie ma żadnych interakcji
+        self.draw_main_game()
+        pygame.display.flip()
+
+    def draw_main_game(self):
+        """Rysuje główną grę (pokój, gracza, UI itp.)"""
         # Rysuj tło pokoju
         self.current_room.draw(screen, self.camera_x, self.camera_y)
+        
+        
+        
         self.player.draw(self.camera_x, self.camera_y)
         self.ui.draw()
 
-        if self.chat_mode:
-            self.draw_chat()
-
-        # Podpowiedzi interakcji i gra w kości
-
-        if self.interaction_hint and not self.in_dice_game and not self.in_cups_game:
-
+        # Podpowiedzi interakcji
+        if self.interaction_hint:
             hint_box = pygame.Rect(SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT - 70, 400, 40)
             pygame.draw.rect(screen, (255, 255, 224), hint_box, border_radius=12)
             hint_text = font.render(self.interaction_hint, True, BLACK)
             screen.blit(hint_text, (hint_box.x + 20, hint_box.y + 10))
-
-        if self.in_dice_game:
-            self.dice_game.draw()
-
-        elif self.in_cups_game:
-            self.cups_game.draw()
+            
+        # Rysuj stół z kubkami
         cups_table_screen_pos = (
             self.cups_table_rect.x - self.camera_x,
             self.cups_table_rect.y - self.camera_y
@@ -238,8 +252,6 @@ class Game:
         mouse_pos = pygame.mouse.get_pos()
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND if self.quit_button.collidepoint(mouse_pos) else pygame.SYSTEM_CURSOR_ARROW)
 
-        pygame.display.flip()
-
     def get_current_room_name(self):
         """Zwraca nazwę aktualnego pokoju"""
         for name, room in self.rooms.items():
@@ -253,69 +265,52 @@ class Game:
                 self.player.save_data()
                 self.running = False
 
-            elif event.type == pygame.KEYDOWN:
+            # Obsługa wydarzeń w zależności od stanu gry
+            if self.in_dice_game:
+                self.dice_game.handle_event(event)
+                if not self.dice_game.in_game:
+                    self.in_dice_game = False
+                continue
+                
+            elif self.in_cups_game:
+                self.cups_game.handle_event(event)
+                if not self.cups_game.in_game:
+                    self.in_cups_game = False
+                continue
 
-               
-                if self.in_dice_game:
-                    self.dice_game.handle_event(event)
-                    if not self.dice_game.in_game:
-                        self.in_dice_game = False
-                elif self.in_cups_game:
-                    self.cups_game.handle_event(event)
-                    if not self.cups_game.in_game:
-                        self.in_cups_game = False
+            # Sprawdź czy jakiś NPC ma aktywne okno czatu
+            any_npc_handled = False
+            for npc in self.current_room.npcs:
+                if npc.chat_window.active and npc.handle_event(event):
+                    any_npc_handled = True
+                    break
 
-                elif self.chat_mode:
-                    if event.key == pygame.K_RETURN:
-                        if self.chat_input.strip():
-                            self.chat_history.append("Ty: " + self.chat_input)
-                            response = get_ai_response(self.chat_input)
-                            self.chat_history.append("NPC: " + response)
-                            self.chat_input = ""
-                    elif event.key == pygame.K_BACKSPACE:
-                        self.chat_input = self.chat_input[:-1]
-                    elif event.key == pygame.K_ESCAPE:
-                        self.chat_mode = False
+            # Jeśli NPC obsłużył zdarzenie, nie przetwarzaj dalej
+            if any_npc_handled:
+                continue
+
+            # Obsługa wydarzeń gry głównej
+            if event.type == pygame.KEYDOWN:
+                self.ui.handle_todo_event(event)
+                if event.key == pygame.K_SPACE:
+                    # Sprawdź czy gracz jest przy automacie
+                    if self.player.rect.colliderect(self.automat_rect.inflate(100, 100)):
+                        self.in_dice_game = True
+                        self.dice_game.reset_game()
+                    # Sprawdź czy gracz jest przy stole z kubkami
+                    elif self.player.rect.colliderect(self.cups_table_rect.inflate(100, 100)):
+                        self.in_cups_game = True
+                        self.cups_game.reset_game()
+                    # Sprawdź interakcję z NPCs
                     else:
-                        self.chat_input += event.unicode
-                else:
-                    self.ui.handle_todo_event(event)
-                    if event.key == pygame.K_SPACE:
-                        if self.player.rect.colliderect(self.automat_rect.inflate(100, 100)):
-                            self.in_dice_game = True
-                            self.dice_game.reset_game()
-
-                        elif self.player.rect.colliderect(self.cups_table_rect.inflate(100, 100)):
-                            self.in_cups_game = True
-                            self.cups_game.reset_game()
-
                         for npc in self.current_room.npcs:
                             if self.player.rect.colliderect(npc.rect.inflate(100, 100)):
-                                self.chat_mode = True
-                                self.chat_history.append("NPC: Witaj studencie! W czym mogę pomóc?")
+                                npc.handle_interaction()
                                 break
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.in_dice_game:
-
-                    self.dice_game.handle_event(event)
-                    if not self.dice_game.in_game:
-                        self.in_dice_game = False
-                elif self.in_cups_game:
-                    self.cups_game.handle_event(event)
-                    if not self.cups_game.in_game:
-                        self.in_cups_game = False
-
-                elif self.quit_button.collidepoint(event.pos):
+                if self.quit_button.collidepoint(event.pos):
                     self.player.save_data()
                     self.running = False
                 else:
                     self.ui.handle_todo_click(event.pos)
-
-            # Handle other events for games (removed the problematic line)
-            elif self.in_dice_game:
-                self.dice_game.handle_event(event)
-            elif self.in_cups_game:
-                # Fixed: Use handle_event instead of handle_timer_event
-                self.cups_game.handle_event(event)
-
