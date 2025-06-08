@@ -10,8 +10,9 @@ class DiceGame:
         self.large_font = pygame.font.Font(None, 42)
         self.small_font = pygame.font.Font(None, 24)
         self.title_font = pygame.font.Font(None, 54)
-        self.bet_amount = 1
-        self.max_bets = 3
+        self.tiny_font = pygame.font.Font(None, 20)
+        
+        self.max_bets = 5
         self.result = ""
         self.rolling = False
         
@@ -31,16 +32,22 @@ class DiceGame:
         self.display_dice2 = self.dice2
         
         self.choices = ["Mniej niż 7", "Więcej niż 7"] + [str(i) for i in range(2, 13)]
-        self.selected_bets = []
+        
+        # Nowy system zakładów - każdy zakład ma swoją stawkę
+        self.selected_bets = {}  # {"opcja": stawka}
+        self.current_bet_amount = 1
+        self.selected_option = None  # Aktualnie wybrana opcja do ustawiania stawki
+        
         self.roll_start_time = 0
         self.animation_duration = 2000  # 2 sekundy animacji
         self.button_rects = []
         
-        # Lepsze rozmiary przycisków i pozycjonowanie
-        self.roll_button = pygame.Rect(SCREEN_WIDTH//2 - 70, 320, 140, 45)
-        self.exit_button = pygame.Rect(SCREEN_WIDTH - 110, 10, 95, 35)
-        self.bet_up_button = pygame.Rect(250, SCREEN_HEIGHT - 300, 35, 30)
-        self.bet_down_button = pygame.Rect(290, SCREEN_HEIGHT - 300, 35, 30)
+        # Spójne rozmiary przycisków - wszystkie z border_radius=8 i grubością obramowania 2px
+        self.roll_button = pygame.Rect(SCREEN_WIDTH//2 - 80, 320, 160, 50)
+        self.exit_button = pygame.Rect(SCREEN_WIDTH - 125, 10, 115, 45)
+        self.bet_up_button = pygame.Rect(250, SCREEN_HEIGHT - 340, 45, 40)
+        self.bet_down_button = pygame.Rect(300, SCREEN_HEIGHT - 340, 45, 40)
+        self.clear_bets_button = pygame.Rect(350, SCREEN_HEIGHT - 340, 125, 40)
         self.in_game = True
         
         # Animacja kostek
@@ -134,8 +141,8 @@ class DiceGame:
             # Główne kostki z subtelnym obramowaniem
             pygame.draw.rect(screen, WHITE, dice1_rect, border_radius=8)
             pygame.draw.rect(screen, WHITE, dice2_rect, border_radius=8)
-            pygame.draw.rect(screen, (160, 160, 160), dice1_rect, 1, border_radius=8)
-            pygame.draw.rect(screen, (160, 160, 160), dice2_rect, 1, border_radius=8)
+            pygame.draw.rect(screen, (160, 160, 160), dice1_rect, 2, border_radius=8)
+            pygame.draw.rect(screen, (160, 160, 160), dice2_rect, 2, border_radius=8)
             
             # Numery na kostkach - proporcjonalne do rozmiaru
             dice_font_size = max(int(36 * self.dice1_scale), 20)
@@ -157,106 +164,173 @@ class DiceGame:
         screen.blit(total_shadow, (total_rect.x + 2, total_rect.y + 2))
         screen.blit(total_text, total_rect)
 
-        # Przycisk losowania z gradientem - elegancki bez grubego konturu
+        # Przycisk losowania z gradientem - spójny styl
         color = (50, 180, 50) if not self.rolling and self.selected_bets else (80, 80, 80)
         end_color = (min(color[0] + 40, 255), min(color[1] + 40, 255), min(color[2] + 40, 255))
         self.draw_gradient_button(self.roll_button, color, end_color)
-        pygame.draw.rect(screen, (max(color[0] - 20, 0), max(color[1] - 20, 0), max(color[2] - 20, 0)), self.roll_button, 1, border_radius=6)
+        pygame.draw.rect(screen, (max(color[0] - 30, 0), max(color[1] - 30, 0), max(color[2] - 30, 0)), self.roll_button, 2, border_radius=8)
         roll_text = self.font.render("LOSUJ KOŚCI", True, WHITE)
         roll_rect = roll_text.get_rect(center=self.roll_button.center)
         screen.blit(roll_text, roll_rect)
 
-        # Kontrola stawki z lepszym designem - subtelne obramowanie
-        bet_bg = pygame.Rect(40, SCREEN_HEIGHT - 320, 300, 50)
+        # Panel kontroli stawki - spójny z innymi elementami
+        bet_bg = pygame.Rect(20, SCREEN_HEIGHT - 420, 480, 70)
         pygame.draw.rect(screen, (35, 35, 55), bet_bg, border_radius=8)
-        pygame.draw.rect(screen, (70, 70, 110), bet_bg, 1, border_radius=8)
+        pygame.draw.rect(screen, (70, 70, 110), bet_bg, 2, border_radius=8)
         
-        bet_text = self.font.render(f"Stawka: {self.bet_amount} monet", True, WHITE)
-        screen.blit(bet_text, (55, SCREEN_HEIGHT - 310))
+        # Informacje o stawce
+        if self.selected_option:
+            bet_text = self.font.render(f"Stawka dla '{self.selected_option}': {self.current_bet_amount} monet", True, (255, 215, 0))
+        else:
+            bet_text = self.font.render(f"Stawka dla nowych zakładów: {self.current_bet_amount} monet", True, WHITE)
+        screen.blit(bet_text, (35, SCREEN_HEIGHT - 400))
         
-        # Przyciski stawki z gradientem - eleganckie bez grubych konturów
+        instruction_text = self.small_font.render("Kliknij opcję zakładu, następnie ustaw stawkę i zatwierdź", True, (200, 200, 200))
+        screen.blit(instruction_text, (35, SCREEN_HEIGHT - 370))
+        
+        # Przyciski stawki z gradientem - spójne rozmiary i obramowania
         self.draw_gradient_button(self.bet_up_button, (40, 130, 40), (80, 170, 80))
         self.draw_gradient_button(self.bet_down_button, (130, 40, 40), (170, 80, 80))
-        pygame.draw.rect(screen, (20, 100, 20), self.bet_up_button, 1, border_radius=4)
-        pygame.draw.rect(screen, (100, 20, 20), self.bet_down_button, 1, border_radius=4)
+        self.draw_gradient_button(self.clear_bets_button, (100, 100, 40), (140, 140, 80))
+        
+        pygame.draw.rect(screen, (20, 100, 20), self.bet_up_button, 2, border_radius=8)
+        pygame.draw.rect(screen, (100, 20, 20), self.bet_down_button, 2, border_radius=8)
+        pygame.draw.rect(screen, (80, 80, 20), self.clear_bets_button, 2, border_radius=8)
         
         up_text = self.font.render("+", True, WHITE)
         down_text = self.font.render("−", True, WHITE)
+        clear_text = self.small_font.render("WYCZYŚĆ", True, WHITE)
+        
         up_rect = up_text.get_rect(center=self.bet_up_button.center)
         down_rect = down_text.get_rect(center=self.bet_down_button.center)
+        clear_rect = clear_text.get_rect(center=self.clear_bets_button.center)
+        
         screen.blit(up_text, up_rect)
         screen.blit(down_text, down_rect)
+        screen.blit(clear_text, clear_rect)
 
-        # Opcje zakładów - dopasowane rozmiary bez brzydkich obrysów
+        # Opcje zakładów - spójne rozmiary i obramowania
         self.button_rects = []
-        start_x = 40
-        y1 = SCREEN_HEIGHT - 220  # Pierwszy rząd
-        y2 = SCREEN_HEIGHT - 175  # Drugi rząd
+        start_x = 20
+        y1 = SCREEN_HEIGHT - 320  # Pierwszy rząd
+        y2 = SCREEN_HEIGHT - 275  # Drugi rząd
+        y3 = SCREEN_HEIGHT - 210  # Trzeci rząd
         
-        # Pierwszy rząd - opcje "mniej/więcej niż 7" - bez grubych obramowań
+        # Pierwszy rząd - opcje "mniej/więcej niż 7"
         for i, choice in enumerate(self.choices[:2]):
-            rect = pygame.Rect(start_x + i * 170, y1, 160, 35)
+            rect = pygame.Rect(start_x + i * 190, y1, 180, 40)
             
-            if choice in self.selected_bets:
-                # Wybrane - złoty gradient z delikatnym cieniem
+            is_selected = choice == self.selected_option
+            has_bet = choice in self.selected_bets
+            
+            if is_selected:
+                # Aktualnie wybrana opcja - fioletowy
+                self.draw_gradient_button(rect, (150, 50, 200), (180, 80, 230))
+                pygame.draw.rect(screen, (120, 30, 170), rect, 2, border_radius=8)
+                text_color = WHITE
+            elif has_bet:
+                # Ma już postawiony zakład - złoty
                 self.draw_gradient_button(rect, (255, 215, 0), (255, 235, 50))
-                pygame.draw.rect(screen, (200, 180, 0), rect, 1, border_radius=6)
+                pygame.draw.rect(screen, (200, 180, 0), rect, 2, border_radius=8)
                 text_color = BLACK
             else:
-                # Niewybrane - niebieski gradient z delikatnym cieniem
+                # Niewybrane - niebieski
                 self.draw_gradient_button(rect, (60, 120, 160), (80, 140, 180))
-                pygame.draw.rect(screen, (40, 100, 140), rect, 1, border_radius=6)
+                pygame.draw.rect(screen, (40, 100, 140), rect, 2, border_radius=8)
                 text_color = WHITE
             
+            # Tekst opcji
             text = self.small_font.render(choice, True, text_color)
-            text_rect = text.get_rect(center=rect.center)
+            text_rect = text.get_rect(center=(rect.centerx, rect.centery - 8))
             screen.blit(text, text_rect)
+            
+            # Pokaż stawkę jeśli jest
+            if has_bet:
+                bet_text = self.tiny_font.render(f"Stawka: {self.selected_bets[choice]}", True, text_color)
+                bet_rect = bet_text.get_rect(center=(rect.centerx, rect.centery + 8))
+                screen.blit(bet_text, bet_rect)
+            
             self.button_rects.append((rect, choice))
 
-        # Drugi rząd - konkretne liczby - bez grubych obramowań
-        for i, choice in enumerate(self.choices[2:]):
-            x = start_x + (i % 11) * 65
-            y = y2 if i < 11 else y2 + 40
-            rect = pygame.Rect(x, y, 60, 35)
+        # Drugi i trzeci rząd - konkretne liczby (6 w każdym rzędzie)
+        numbers = self.choices[2:]
+        for i, choice in enumerate(numbers):
+            row = i // 6
+            col = i % 6
+            x = start_x + col * 95
+            y = y2 if row == 0 else y3
+            rect = pygame.Rect(x, y, 90, 40)
             
-            if choice in self.selected_bets:
-                # Wybrane - złoty gradient
+            is_selected = choice == self.selected_option
+            has_bet = choice in self.selected_bets
+            
+            if is_selected:
+                # Aktualnie wybrana opcja - fioletowy
+                self.draw_gradient_button(rect, (150, 50, 200), (180, 80, 230))
+                pygame.draw.rect(screen, (120, 30, 170), rect, 2, border_radius=8)
+                text_color = WHITE
+            elif has_bet:
+                # Ma już postawiony zakład - złoty
                 self.draw_gradient_button(rect, (255, 215, 0), (255, 235, 50))
-                pygame.draw.rect(screen, (200, 180, 0), rect, 1, border_radius=6)
+                pygame.draw.rect(screen, (200, 180, 0), rect, 2, border_radius=8)
                 text_color = BLACK
             else:
-                # Niewybrane - niebieski gradient
+                # Niewybrane - niebieski
                 self.draw_gradient_button(rect, (60, 120, 160), (80, 140, 180))
-                pygame.draw.rect(screen, (40, 100, 140), rect, 1, border_radius=6)
+                pygame.draw.rect(screen, (40, 100, 140), rect, 2, border_radius=8)
                 text_color = WHITE
             
+            # Tekst opcji
             text = self.font.render(choice, True, text_color)
-            text_rect = text.get_rect(center=rect.center)
+            text_rect = text.get_rect(center=(rect.centerx, rect.centery - 8))
             screen.blit(text, text_rect)
+            
+            # Pokaż stawkę jeśli jest
+            if has_bet:
+                bet_text = self.tiny_font.render(f"{self.selected_bets[choice]}", True, text_color)
+                bet_rect = bet_text.get_rect(center=(rect.centerx, rect.centery + 10))
+                screen.blit(bet_text, bet_rect)
+            
             self.button_rects.append((rect, choice))
 
-        # Panel informacyjny - subtelne obramowanie
-        info_bg = pygame.Rect(40, SCREEN_HEIGHT - 120, SCREEN_WIDTH - 80, 70)
+        # Panel informacyjny o zakładach - spójny styl
+        info_bg = pygame.Rect(20, SCREEN_HEIGHT - 170, SCREEN_WIDTH - 40, 120)
         pygame.draw.rect(screen, (35, 35, 55), info_bg, border_radius=8)
-        pygame.draw.rect(screen, (70, 70, 110), info_bg, 1, border_radius=8)
+        pygame.draw.rect(screen, (70, 70, 110), info_bg, 2, border_radius=8)
 
-        # Informacje o zakładach
-        selected_text = self.font.render(f"Wybrane zakłady ({len(self.selected_bets)}/{self.max_bets}):", True, WHITE)
-        screen.blit(selected_text, (55, SCREEN_HEIGHT - 110))
+        # Nagłówek
+        header_text = self.font.render(f"Twoje zakłady ({len(self.selected_bets)}/{self.max_bets}):", True, WHITE)
+        screen.blit(header_text, (35, SCREEN_HEIGHT - 160))
         
+        # Lista zakładów - lepsze formatowanie w kolumnach
         if self.selected_bets:
-            bets_str = ", ".join(self.selected_bets)
-            if len(bets_str) > 50:  # Skróć długie napisy
-                bets_str = bets_str[:47] + "..."
-            bets_text = self.small_font.render(bets_str, True, (255, 215, 0))
-            screen.blit(bets_text, (55, SCREEN_HEIGHT - 90))
+            y_offset = SCREEN_HEIGHT - 135
+            col_width = (SCREEN_WIDTH - 80) // 2
+            
+            bets_list = list(self.selected_bets.items())
+            for i, (bet, amount) in enumerate(bets_list):
+                if i < 4:  # Pierwsza kolumna
+                    x_pos = 35
+                    y_pos = y_offset + (i * 22)
+                elif i < 8:  # Druga kolumna  
+                    x_pos = 35 + col_width
+                    y_pos = y_offset + ((i - 4) * 22)
+                else:
+                    break  # Maksymalnie 8 pozycji
+                    
+                bet_text = self.small_font.render(f"• {bet}: {amount} monet", True, (255, 215, 0))
+                screen.blit(bet_text, (x_pos, y_pos))
 
         # Koszt całkowity i monety gracza
-        total_cost = self.bet_amount * len(self.selected_bets)
-        cost_text = self.small_font.render(f"Koszt: {total_cost} | Twoje monety: {self.player.coins}", True, (150, 255, 150))
-        screen.blit(cost_text, (55, SCREEN_HEIGHT - 65))
+        total_cost = sum(self.selected_bets.values())
+        cost_text = self.font.render(f"Koszt całkowity: {total_cost} monet | Twoje monety: {self.player.coins}", True, (150, 255, 150))
+        screen.blit(cost_text, (35, SCREEN_HEIGHT - 85))
+        
+        # Informacja o wygranych
+        payout_info = self.small_font.render("Wypłaty: Mniej/Więcej niż 7 = 2:1, Konkretna liczba = 6:1", True, (200, 200, 200))
+        screen.blit(payout_info, (35, SCREEN_HEIGHT - 65))
 
-        # Wynik z efektem - lepsze pozycjonowanie
+        # Wynik z efektem
         if self.result:
             result_color = (255, 100, 100) if "Przegrana" in self.result else (100, 255, 100)
             result_shadow = self.font.render(self.result, True, (20, 20, 20))
@@ -265,27 +339,31 @@ class DiceGame:
             screen.blit(result_shadow, (result_rect.x + 1, result_rect.y + 1))
             screen.blit(result_text, result_rect)
 
-        # Przycisk wyjścia - elegancki bez grubego konturu
+        # Przycisk wyjścia - spójny styl
         self.draw_gradient_button(self.exit_button, (130, 40, 40), (170, 80, 80))
-        pygame.draw.rect(screen, (100, 20, 20), self.exit_button, 1, border_radius=6)
+        pygame.draw.rect(screen, (100, 20, 20), self.exit_button, 2, border_radius=8)
         exit_text = self.small_font.render("WYJŚCIE", True, WHITE)
         exit_rect = exit_text.get_rect(center=self.exit_button.center)
         screen.blit(exit_text, exit_rect)
 
-        # Instrukcje w ładnym panelu - subtelne obramowanie
-        instr_bg = pygame.Rect(SCREEN_WIDTH - 280, 50, 260, 100)
+        # Panel instrukcji - spójny styl
+        instr_bg = pygame.Rect(SCREEN_WIDTH - 320, 50, 300, 130)
         pygame.draw.rect(screen, (35, 35, 55, 200), instr_bg, border_radius=8)
-        pygame.draw.rect(screen, (70, 70, 110), instr_bg, 1, border_radius=8)
+        pygame.draw.rect(screen, (70, 70, 110), instr_bg, 2, border_radius=8)
         
         instructions = [
-            "• Kliknij opcje aby wybrać zakłady",
-            "• Ustaw stawkę przyciskami +/−",
-            "• Kliknij LOSUJ KOŚCI aby grać",
-            "• ESC lub SPACE - szybkie akcje"
+            "INSTRUKCJE:",
+            "• Kliknij opcję aby ją wybrać",
+            "• Ustaw stawkę przyciskami +/−", 
+            "• Kliknij ponownie aby potwierdzić",
+            "• WYCZYŚĆ - usuwa wszystkie zakłady",
+            "• LOSUJ KOŚCI aby grać"
         ]
         for i, instruction in enumerate(instructions):
-            text = self.small_font.render(instruction, True, WHITE)
-            screen.blit(text, (SCREEN_WIDTH - 270, 65 + i * 22))
+            color = (255, 215, 0) if i == 0 else WHITE
+            font = self.small_font if i == 0 else self.tiny_font
+            text = font.render(instruction, True, color)
+            screen.blit(text, (SCREEN_WIDTH - 310, 65 + i * 20))
 
     def draw_gradient_button(self, rect, color1, color2):
         """Rysuje przycisk z gradientem"""
@@ -310,32 +388,64 @@ class DiceGame:
                 self.roll_dice()
                 return
                 
-            # Przyciski stawki
-            if self.bet_up_button.collidepoint(event.pos):
-                self.bet_amount += 1
-                return
-            if self.bet_down_button.collidepoint(event.pos) and self.bet_amount > 1:
-                self.bet_amount -= 1
+            # Przycisk czyszczenia zakładów
+            if self.clear_bets_button.collidepoint(event.pos):
+                self.selected_bets.clear()
+                self.selected_option = None
                 return
                 
-            # Opcje zakładów
+            # Przyciski stawki
+            if self.bet_up_button.collidepoint(event.pos):
+                self.current_bet_amount += 1
+                # Jeśli mamy wybraną opcję, aktualizuj jej stawkę
+                if self.selected_option and self.selected_option in self.selected_bets:
+                    self.selected_bets[self.selected_option] = self.current_bet_amount
+                return
+                
+            if self.bet_down_button.collidepoint(event.pos) and self.current_bet_amount > 1:
+                self.current_bet_amount -= 1
+                # Jeśli mamy wybraną opcję, aktualizuj jej stawkę
+                if self.selected_option and self.selected_option in self.selected_bets:
+                    self.selected_bets[self.selected_option] = self.current_bet_amount
+                return
+                
+            # Opcje zakładów - nowy system
             for rect, choice in self.button_rects:
                 if rect.collidepoint(event.pos):
-                    if choice in self.selected_bets:
-                        self.selected_bets.remove(choice)
-                    elif len(self.selected_bets) < self.max_bets:
-                        self.selected_bets.append(choice)
+                    if choice == self.selected_option:
+                        # Potwierdzenie zakładu - dodaj/aktualizuj
+                        if len(self.selected_bets) < self.max_bets or choice in self.selected_bets:
+                            self.selected_bets[choice] = self.current_bet_amount
+                            self.selected_option = None
+                    else:
+                        # Wybór nowej opcji
+                        self.selected_option = choice
+                        if choice in self.selected_bets:
+                            # Jeśli opcja już ma zakład, pokaż jej stawkę
+                            self.current_bet_amount = self.selected_bets[choice]
                     return
 
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.in_game = False
             elif event.key == pygame.K_UP:
-                self.bet_amount += 1
-            elif event.key == pygame.K_DOWN and self.bet_amount > 1:
-                self.bet_amount -= 1
+                self.current_bet_amount += 1
+                if self.selected_option and self.selected_option in self.selected_bets:
+                    self.selected_bets[self.selected_option] = self.current_bet_amount
+            elif event.key == pygame.K_DOWN and self.current_bet_amount > 1:
+                self.current_bet_amount -= 1
+                if self.selected_option and self.selected_option in self.selected_bets:
+                    self.selected_bets[self.selected_option] = self.current_bet_amount
             elif event.key == pygame.K_SPACE:
                 self.roll_dice()
+            elif event.key == pygame.K_c:  # 'C' - clear bets
+                self.selected_bets.clear()
+                self.selected_option = None
+            elif event.key == pygame.K_RETURN:  # Enter - potwierdź zakład
+                if self.selected_option:
+                    if len(self.selected_bets) < self.max_bets or self.selected_option in self.selected_bets:
+                        self.selected_bets[self.selected_option] = self.current_bet_amount
+                        self.selected_option = None
                 
         # Obsługa animacji losowania
         elif event.type == pygame.USEREVENT + 1 and self.rolling:
@@ -345,10 +455,10 @@ class DiceGame:
     def roll_dice(self):
         if not self.selected_bets or self.rolling:
             if not self.selected_bets:
-                self.result = "Najpierw wybierz zakłady!"
+                self.result = "Najpierw postaw zakłady!"
             return
 
-        total_bet = self.bet_amount * len(self.selected_bets)
+        total_bet = sum(self.selected_bets.values())
         if self.player.coins < total_bet:
             self.result = "Za mało monet!"
             return
@@ -363,35 +473,35 @@ class DiceGame:
         # Ustaw finalne wartości kostek
         self.dice1 = random.randint(1, 6)
         self.dice2 = random.randint(1, 6)
+        # Ustaw finalne wartości kostek
+        self.dice1 = random.randint(1, 6)
+        self.dice2 = random.randint(1, 6)
 
     def resolve_bet(self):
         total = self.dice1 + self.dice2
-        wins = []
+        wins = {}
         
-        # Sprawdź które zakłady wygrały
-        for bet in self.selected_bets:
+        # Sprawdź które zakłady wygrały i ile
+        for bet, amount in self.selected_bets.items():
             if bet == "Mniej niż 7" and total < 7:
-                wins.append(bet)
+                wins[bet] = amount * 2  # 2:1
             elif bet == "Więcej niż 7" and total > 7:
-                wins.append(bet)
+                wins[bet] = amount * 2  # 2:1  
             elif bet == str(total):
-                wins.append(bet)
+                wins[bet] = amount * 6  # 6:1
 
         if wins:
-            # Różne wypłaty dla różnych typów zakładów
-            winnings = 0
-            for win_bet in wins:
-                if win_bet in ["Mniej niż 7", "Więcej niż 7"]:
-                    winnings += self.bet_amount * 2  # 2:1 dla zakładów mniej/więcej
-                else:
-                    winnings += self.bet_amount * 6  # 6:1 dla konkretnej liczby
+            total_winnings = sum(wins.values())
+            self.player.coins += total_winnings
             
-            self.player.coins += winnings
-            self.result = f"Suma: {total} - Wygrana! +{winnings} monet"
+            # Pokaż szczegóły wygranej
+            win_details = ", ".join([f"{bet}: +{amount}" for bet, amount in wins.items()])
+            self.result = f"Suma: {total} - Wygrana! {win_details} (Łącznie: +{total_winnings})"
         else:
             self.result = f"Suma: {total} - Przegrana!"
 
-        self.selected_bets = []
+        self.selected_bets.clear()
+        self.selected_option = None
         self.rolling = False
         self.player.save_data()
 
@@ -401,8 +511,9 @@ class DiceGame:
         self.dice2 = random.randint(1, 6)
         self.display_dice1 = self.dice1
         self.display_dice2 = self.dice2
-        self.selected_bets = []
+        self.selected_bets.clear()
+        self.selected_option = None
         self.result = ""
         self.rolling = False
-        self.bet_amount = 1
+        self.current_bet_amount = 1
         self.in_game = True
