@@ -16,7 +16,7 @@ from Room import Room
 from DiceGame import DiceGame
 from CupsGame import CupsGame
 from WheelOfFortuneGame import WheelOfFortuneGame
-
+from MiniGameLoader import MiniGameLoader
 
 class Game:
     def __init__(self, username):
@@ -306,7 +306,6 @@ class Game:
                     self.in_wheel_game = False
                 continue
 
-
             # Sprawdź czy jakiś NPC ma aktywne okno czatu
             any_npc_handled = False
             for npc in self.current_room.npcs:
@@ -324,19 +323,17 @@ class Game:
                 if event.key == pygame.K_SPACE:
                     # Sprawdź czy gracz jest przy automacie
                     if self.player.rect.colliderect(self.automat_rect.inflate(100, 100)):
-                        self.in_dice_game = True
-                        self.dice_game.reset_game()
+                        self.start_minigame_with_loader("dice")
+                        
                     # Sprawdź czy gracz jest przy stole z kubkami
                     elif self.player.rect.colliderect(self.cups_table_rect.inflate(100, 100)):
-                        self.in_cups_game = True
-                        self.cups_game.reset_game()
+                        self.start_minigame_with_loader("cups")
+                        
                     elif (
                         self.get_current_room_name() == "GameRoom" and 
                         self.player.rect.colliderect(self.wheel_rect.inflate(100, 100))
                     ):
-                        self.in_wheel_game = True
-                        self.wheel_game.reset_game()
-
+                        self.start_minigame_with_loader("wheel")
 
                     # Sprawdź interakcję z NPCs
                     else:
@@ -351,3 +348,20 @@ class Game:
                     self.running = False
                 else:
                     self.ui.handle_todo_click(event.pos)
+    def start_minigame_with_loader(self, game_type):
+        """Uruchamia minigrę z ekranem ładowania"""
+        # Stwórz i uruchom ekran ładowania
+        loader = MiniGameLoader(game_type, self.player.name)
+        
+        # Uruchom ekran ładowania
+        if loader.run():
+            # Po zakończeniu ładowania, uruchom odpowiednią minigrę
+            if game_type == "dice":
+                self.in_dice_game = True
+                self.dice_game.reset_game()
+            elif game_type == "cups":
+                self.in_cups_game = True
+                self.cups_game.reset_game()
+            elif game_type == "wheel":
+                self.in_wheel_game = True
+                self.wheel_game.reset_game()
