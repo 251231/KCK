@@ -185,37 +185,40 @@ class LoadingScreen:
             frame_rect = current_frame_surface.get_rect(center=(center_x, center_y))
             screen.blit(current_frame_surface, frame_rect)
     
+    
     def draw_progress_bar(self, x, y, width, height):
-        """Rysuje ciepły pasek postępu"""
+        """Rysuje ciepły pasek postępu z zaokrąglonym wypełnieniem"""
+        border_radius = height // 2
+        
         # Cień paska
         shadow_rect = (x + 2, y + 2, width, height)
-        pygame.draw.rect(screen, self.warm_colors['shadow_warm'], shadow_rect, border_radius=height//2)
+        pygame.draw.rect(screen, self.warm_colors['shadow_warm'], shadow_rect, border_radius=border_radius)
         
         # Tło paska
-        pygame.draw.rect(screen, self.warm_colors['bg_dark'], (x, y, width, height), border_radius=height//2)
-        pygame.draw.rect(screen, self.warm_colors['accent_warm'], (x, y, width, height), 3, border_radius=height//2)
+        pygame.draw.rect(screen, self.warm_colors['bg_dark'], (x, y, width, height), border_radius=border_radius)
+        pygame.draw.rect(screen, self.warm_colors['accent_warm'], (x, y, width, height), 3, border_radius=border_radius)
         
-        # Wypełnienie paska z ciepłym gradientem
+        # Wypełnienie paska z zaokrągleniem
         fill_width = int((self.progress / self.max_progress) * width)
         if fill_width > 0:
-            # Ciepły gradient w pasku postępu
-            for i in range(fill_width):
-                progress_ratio = i / width
-                # Interpolacja między ciepłymi kolorami
-                r = int(self.warm_colors['progress_start'][0] + progress_ratio * 
-                       (self.warm_colors['progress_end'][0] - self.warm_colors['progress_start'][0]))
-                g = int(self.warm_colors['progress_start'][1] + progress_ratio * 
-                       (self.warm_colors['progress_end'][1] - self.warm_colors['progress_start'][1]))
-                b = int(self.warm_colors['progress_start'][2] + progress_ratio * 
-                       (self.warm_colors['progress_end'][2] - self.warm_colors['progress_start'][2]))
-                
-                pygame.draw.rect(screen, (r, g, b), (x + i, y + 2, 1, height - 4))
+            # Gradient - środkowy kolor między start i end
+            progress_ratio = self.progress / self.max_progress
+            r = int(self.warm_colors['progress_start'][0] + progress_ratio * 
+                (self.warm_colors['progress_end'][0] - self.warm_colors['progress_start'][0]))
+            g = int(self.warm_colors['progress_start'][1] + progress_ratio * 
+                (self.warm_colors['progress_end'][1] - self.warm_colors['progress_start'][1]))
+            b = int(self.warm_colors['progress_start'][2] + progress_ratio * 
+                (self.warm_colors['progress_end'][2] - self.warm_colors['progress_start'][2]))
+            
+            fill_color = (r, g, b)
+            
+            # Rysuj wypełnienie z zaokrąglonymi rogami
+            pygame.draw.rect(screen, fill_color, (x, y, fill_width, height), border_radius=border_radius)
         
         # Procent w tekście
         percent_text = self.loading_font.render(f"{int(self.progress)}%", True, self.warm_colors['text_cream'])
         text_rect = percent_text.get_rect(center=(x + width // 2, y + height // 2))
         screen.blit(percent_text, text_rect)
-    
     def draw_particles(self):
         """Rysuje ciepłe dekoracyjne cząsteczki w tle"""
         current_time = time.time() - self.start_time
