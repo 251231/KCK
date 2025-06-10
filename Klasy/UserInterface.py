@@ -28,7 +28,9 @@ class UserInterface:
             'success': (100, 200, 100),
             'border': (120, 120, 140),
             'input_bg': (230, 230, 240),
-            'shadow': (30, 30, 40)
+            'shadow': (30, 30, 40),
+            'delete_btn': (220, 100, 100),
+            'delete_hover': (255, 120, 120)
         }
         
         # Zmienne do animacji
@@ -36,6 +38,9 @@ class UserInterface:
         self.target_slide_offset = 0
         self.button_hover = False
         self.animation_speed = 8
+        
+        # Przycisk Clear All
+        self.clear_all_button = pygame.Rect(0, 0, 100, 30)  # Pozycja będzie aktualizowana dynamicznie
 
     def load_todo(self):
         """Wczytuje listę zadań z pliku JSON dla danego użytkownika."""
@@ -153,7 +158,7 @@ class UserInterface:
         # Panel To-Do List (z animacją) - skorygowana pozycja
         if self.todo_visible or self.todo_slide_offset > -300:
             # Obliczamy dynamiczną wysokość panelu na podstawie liczby zadań
-            panel_height = min(500, len(self.todo_items) * 35 + 200)  # Zwiększona minimalna wysokość
+            panel_height = min(500, len(self.todo_items) * 35 + 250)  # Zwiększona minimalna wysokość
             todo_panel_x = SCREEN_WIDTH - 330 + self.todo_slide_offset
             todo_panel_y = 180  # Przesunięty niżej, żeby nie nachodzić na przycisk
             todo_panel = pygame.Rect(todo_panel_x, todo_panel_y, 320, panel_height)
@@ -185,11 +190,19 @@ class UserInterface:
                 placeholder = font.render("Wpisz nowe zadanie...", True, (150, 150, 150))
                 screen.blit(placeholder, (input_rect.x + 8, input_rect.y + 8))
             
+            # Przycisk Clear All (tylko jeśli są zadania)
+            if self.todo_items:
+                self.clear_all_button = pygame.Rect(todo_panel.x + 200, todo_panel.y + 85, 100, 25)
+                clear_hover = self.clear_all_button.collidepoint(mouse_pos)
+                self.draw_button(screen, self.clear_all_button, "Wyczyść", 
+                               self.colors['delete_btn'], self.colors['delete_hover'], 
+                               WHITE, clear_hover)
+            
             # Lista zadań - skorygowane pozycje
-            max_visible_items = min(10, (panel_height - 120) // 35)  # Dynamiczna liczba widocznych zadań
+            max_visible_items = min(10, (panel_height - 150) // 35)  # Skorygowane dla nowego przycisku
             for i, item in enumerate(self.todo_items[:max_visible_items]):
-                item_y = todo_panel.y + 90 + i * 35
-                item_rect = pygame.Rect(todo_panel.x + 15, item_y, 290, 30)
+                item_y = todo_panel.y + 120 + i * 35  # Przesunięte w dół
+                item_rect = pygame.Rect(todo_panel.x + 15, item_y, 250, 30)  # Zmniejszona szerokość dla przycisku X
                 
                 # Sprawdzenie czy zadanie nie wychodzi poza panel
                 if item_rect.bottom > todo_panel.bottom - 30:
@@ -207,11 +220,25 @@ class UserInterface:
                 
                 # Tekst zadania - skrócony jeśli za długi
                 display_text = item
-                if len(display_text) > 38:
-                    display_text = display_text[:38] + "..."
+                if len(display_text) > 30:  # Zmniejszony limit ze względu na przycisk X
+                    display_text = display_text[:30] + "..."
                     
                 item_text = font.render(display_text, True, self.colors['text_light'])
                 screen.blit(item_text, (item_rect.x + 30, item_rect.y + 8))
+                
+                # Przycisk usuwania (X) dla każdego zadania
+                delete_btn_rect = pygame.Rect(item_rect.right + 5, item_rect.y + 5, 20, 20)
+                delete_hover = delete_btn_rect.collidepoint(mouse_pos)
+                
+                # Rysuj przycisk X
+                delete_color = self.colors['delete_hover'] if delete_hover else self.colors['delete_btn']
+                pygame.draw.rect(screen, delete_color, delete_btn_rect)
+                self.draw_pixel_border(screen, delete_btn_rect, self.colors['border'], 1)
+                
+                # Symbol X
+                x_text = font.render("×", True, WHITE)
+                x_rect = x_text.get_rect(center=delete_btn_rect.center)
+                screen.blit(x_text, x_rect)
             
             # Informacja o liczbie zadań - tylko jeśli są ukryte zadania
             hidden_count = len(self.todo_items) - max_visible_items
@@ -233,8 +260,26 @@ class UserInterface:
             if actual_input_rect.collidepoint(pos):
                 self.todo_input_active = True
                 return True
-            else:
-                self.todo_input_active = False
+            
+            # Sprawdź kliknięcie w przycisk Clear All
+            if self.todo_items and self.clear_all_button.collidepoint(pos):
+                self.clear_all_todos()
+                return True
+            
+            # Sprawdź kliknięcia w przyciski usuwania pojedynczych zadań
+            panel_height = min(500, len(self.todo_items) * 35 + 250)
+            max_visible_items = min(10, (panel_height - 150) // 35)
+            
+            for i in range(min(len(self.todo_items), max_visible_items)):
+                item_y = 180 + 120 + i * 35  # 180 = todo_panel_y, 120 = offset zadań
+                delete_btn_rect = pygame.Rect(todo_panel_x + 15 + 250 + 5, item_y + 5, 20, 20)
+                
+                if delete_btn_rect.collidepoint(pos):
+                    self.remove_todo_item(i)
+                    return True
+            
+            # Jeśli kliknięto gdzie indziej, dezaktywuj input
+            self.todo_input_active = False
         else:
             self.todo_input_active = False
         return False
@@ -246,6 +291,17 @@ class UserInterface:
             self.todo_input_text = ''
             self.save_todo()
             self.todo_input_active = False
+
+    def remove_todo_item(self, index):
+        """Usuwa zadanie z listy według indeksu."""
+        if 0 <= index < len(self.todo_items):
+            self.todo_items.pop(index)
+            self.save_todo()
+
+    def clear_all_todos(self):
+        """Usuwa wszystkie zadania z listy."""
+        self.todo_items.clear()
+        self.save_todo()
 
     def handle_todo_event(self, event):
         """Obsługuje zdarzenia klawiatury dla To-Do listy."""
