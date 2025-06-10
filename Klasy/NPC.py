@@ -3,6 +3,21 @@ import textwrap
 import os
 import openai
 
+def draw_text_with_background(surface, text, font, text_color, bg_color, pos, padding=10):
+    # Renderuj tekst
+        text_surface = font.render(text, True, text_color)
+        text_rect = text_surface.get_rect(center=pos)
+    
+    # Stwórz tło
+        bg_rect = text_rect.inflate(padding * 2, padding * 2)
+        pygame.draw.rect(surface, bg_color, bg_rect, border_radius=5)
+    
+    # Opcjonalnie dodaj ramkę
+        pygame.draw.rect(surface, (100, 100, 100), bg_rect, 2, border_radius=5)
+    
+    # Narysuj tekst na wierzchu
+        surface.blit(text_surface, text_rect)
+        
 def get_ai_response(user_input):
     try:
         response = openai.chat.completions.create(
@@ -199,6 +214,8 @@ class AIChatWindow:
         temp_surface.set_alpha(color_with_alpha[3])
         temp_surface.fill(color_with_alpha[:3])
         surface.blit(temp_surface, rect)
+
+    
     
     def draw(self):
         """Rysuje interfejs czatu na pełnym ekranie"""
@@ -301,14 +318,12 @@ class AIChatWindow:
         screen.blit(x_text, x_rect)
         
         # Instrukcja na górze ekranu
-        instruction_text = font.render("Naciśnij ESC lub Exit aby wrócić do gry", True, (255, 255, 255))
-        instruction_rect = instruction_text.get_rect(center=(SCREEN_WIDTH // 2, 30))
+        draw_text_with_background(screen, "Naciśnij Exit w prawym górnym rogu aby wrócić do gry",
+                         font, (255, 255, 255), (50, 50, 50, 180), (SCREEN_WIDTH // 2, 30))
         
         # Tło dla instrukcji
-        instruction_bg = pygame.Rect(instruction_rect.x - 10, instruction_rect.y - 5, 
-                                   instruction_rect.width + 20, instruction_rect.height + 10)
-        self.draw_transparent_surface(screen, (0, 0, 0, 150), instruction_bg)
-        screen.blit(instruction_text, instruction_rect)
+        
+        
 
 class NPC:
     def __init__(self, x, y):
