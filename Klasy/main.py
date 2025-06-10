@@ -7,19 +7,13 @@ from MusicManager import MusicManager
 
 if __name__ == "__main__":
     start_screen = StartScreen()
-    music_manager = MusicManager()
-    
-    # Przykładowe użycie (odkomentuj gdy masz pliki audio)
+    music_manager = MusicManager()  # Stwórz instancję MusicManager
     
     # Ładowanie i odtwarzanie muzyki tła
     music_manager.load_music("assets/GameDziekanat_sound2.mp3")
     music_manager.set_music_volume(0.1)
     music_manager.set_sfx_volume(0.1)
     music_manager.play_music()
-   
-    
-    
-   
     
     start_screen.run()
     username = menu_logowania("assets/LoginMenu.png")
@@ -27,12 +21,12 @@ if __name__ == "__main__":
         # Ekran ładowania
         loading_screen = LoadingScreen(username)
         if loading_screen.run():  # Jeśli ładowanie zakończone sukcesem
-            # Główna gra
+            # Główna gra - PRZEKAŻ music_manager do gry
             music_manager.load_music("assets/GameDziekanat_sound1.mp3")
             music_manager.set_music_volume(0.1)
             music_manager.set_sfx_volume(0.1)
             music_manager.play_music()
-            game = Game(username)
+            game = Game(username, music_manager)  # Dodaj music_manager jako argument
             game.run()
     music_manager.cleanup()
     pygame.quit()
