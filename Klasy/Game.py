@@ -62,9 +62,9 @@ class Game:
         }
 
     def is_in_any_interaction(self):
-        """Sprawdza czy gracz jest w jakiejkolwiek interakcji (minigra lub rozmowa z NPC)"""
+        """Sprawdza czy gracz jest w jakiejkolwiek interakcji (minigra, rozmowa z NPC, lub wpłaty)"""
         # Sprawdź minigry
-        if self.in_dice_game or self.in_cups_game:
+        if self.in_dice_game or self.in_cups_game or self.in_wheel_game:
             return True
         
         # Sprawdź czy jakiś NPC ma aktywne okno czatu
@@ -72,16 +72,20 @@ class Game:
             if npc.chat_window.active:
                 return True
         
+        # Sprawdź czy interfejs wpłat jest aktywny w FeeRoom
+        if isinstance(self.current_room, FeeRoom) and self.current_room.fee_interface_active:
+            return True
+        
         return False
 
     def update(self, dx, dy, delta_time):
         # Jeśli jesteśmy w interakcji, nie aktualizuj gry głównej
         if self.is_in_any_interaction():
+            # Aktualizuj tylko FeeRoom jeśli jego interfejs jest aktywny
+            if isinstance(self.current_room, FeeRoom):
+                self.current_room.update(self, delta_time)
             return
         
-        if self.in_wheel_game:
-            return
-
         # Aktualizuj cooldown teleportacji
         if self.teleport_cooldown > 0:
             self.teleport_cooldown -= delta_time
@@ -92,7 +96,6 @@ class Game:
         # Aktualizuj NPCs w aktualnym pokoju
         for npc in self.current_room.npcs:
             npc.update()
-        
         # Aktualizuj kamerę
         self.update_camera()
         
@@ -101,6 +104,10 @@ class Game:
             self.check_room_transitions()
 
         # Obsługa podpowiedzi interakcji
+        self.update_interaction_hints()
+        
+    def update_interaction_hints(self):
+        """Aktualizuje podpowiedzi interakcji"""
         if self.player.rect.colliderect(self.automat_rect.inflate(100, 100)):
             self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać"
         elif self.player.rect.colliderect(self.cups_table_rect.inflate(100, 100)):
@@ -109,6 +116,8 @@ class Game:
             self.interaction_hint = "Naciśnij SPACJĘ, aby porozmawiać"
         elif self.player.rect.colliderect(self.wheel_rect.inflate(100, 100)):
             self.interaction_hint = "Naciśnij SPACJĘ, aby zakręcić kołem"
+        elif isinstance(self.current_room, FeeRoom) and self.current_room.check_fee_interaction(self.player):
+            self.interaction_hint = "Naciśnij SPACJĘ, aby wpłacić monety"
         else:
             self.interaction_hint = None
         
@@ -201,6 +210,12 @@ class Game:
                 pygame.display.flip()
                 return
         
+        # Jeśli interfejs wpłat jest aktywny, rysuj go
+        if isinstance(self.current_room, FeeRoom) and self.current_room.fee_interface_active:
+            self.draw_main_game()
+            pygame.display.flip()
+            return
+        
         # Rysuj normalną grę tylko jeśli nie ma żadnych interakcji
         self.draw_main_game()
         pygame.display.flip()
@@ -209,8 +224,6 @@ class Game:
         """Rysuje główną grę (pokój, gracza, UI itp.)"""
         # Rysuj tło pokoju
         self.current_room.draw(screen, self.camera_x, self.camera_y)
-        
-        
         
         self.player.draw(self.camera_x, self.camera_y)
         self.ui.draw()
@@ -251,7 +264,6 @@ class Game:
             wheel_text = font.render("KOŁO", True, (255, 255, 0))
             screen.blit(wheel_text, (wheel_pos[0], wheel_pos[1] - 20))
 
-
         # Debug info
         coords_text = font.render(f"X: {int(self.player.rect.x)}, Y: {int(self.player.rect.y)}", True, BLACK)
         screen.blit(coords_text, (10, 10))
@@ -260,10 +272,14 @@ class Game:
         room_text = font.render(f"Pokój: {self.get_current_room_name()}", True, BLACK)
         screen.blit(room_text, (10, 40))
         
+        # Pokazuj liczbę monet gracza
+        coins_text = font.render(f"Monety: {self.player.coins}", True, BLACK)
+        screen.blit(coins_text, (10, 70))
+        
         # Pokazuj cooldown teleportacji (debug)
         if self.teleport_cooldown > 0:
             cooldown_text = font.render(f"Teleport cooldown: {self.teleport_cooldown:.1f}", True, BLACK)
-            screen.blit(cooldown_text, (10, 70))
+            screen.blit(cooldown_text, (10, 100))
 
         # Przycisk quit
         pygame.draw.rect(screen, RED, self.quit_button)
@@ -286,6 +302,11 @@ class Game:
             if event.type == pygame.QUIT:
                 self.player.save_data()
                 self.running = False
+
+            # Obsługa wydarzeń w FeeRoom
+            if isinstance(self.current_room, FeeRoom):
+                if self.current_room.handle_fee_event(event, self.player):
+                    continue
 
             # Obsługa wydarzeń w zależności od stanu gry
             if self.in_dice_game:
@@ -321,8 +342,12 @@ class Game:
             if event.type == pygame.KEYDOWN:
                 self.ui.handle_todo_event(event)
                 if event.key == pygame.K_SPACE:
+                    # Sprawdź czy gracz jest przy strefie wpłat w FeeRoom
+                    if isinstance(self.current_room, FeeRoom) and self.current_room.check_fee_interaction(self.player):
+                        self.current_room.handle_fee_interaction(self.player)
+                        
                     # Sprawdź czy gracz jest przy automacie
-                    if self.player.rect.colliderect(self.automat_rect.inflate(100, 100)):
+                    elif self.player.rect.colliderect(self.automat_rect.inflate(100, 100)):
                         self.start_minigame_with_loader("dice")
                         
                     # Sprawdź czy gracz jest przy stole z kubkami
@@ -348,6 +373,7 @@ class Game:
                     self.running = False
                 else:
                     self.ui.handle_todo_click(event.pos)
+                    
     def start_minigame_with_loader(self, game_type):
         """Uruchamia minigrę z ekranem ładowania"""
         # Stwórz i uruchom ekran ładowania
