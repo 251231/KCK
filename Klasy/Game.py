@@ -25,7 +25,6 @@ class Game:
         self.player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, None, username)
         self.camera_x = 0
         self.camera_y = 0
-        self.quit_button = pygame.Rect(SCREEN_WIDTH - 210, SCREEN_HEIGHT - 70, 200, 50)
         self.ui = UserInterface(self.player)
         
         # Dodaj referencję do MusicManager
@@ -273,7 +272,7 @@ class Game:
     def update_interaction_hints(self):
         """Aktualizuje podpowiedzi interakcji"""
         if self.player.rect.colliderect(self.automat_rect.inflate(100, 100)):
-            self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać"
+            self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w kości"
         elif self.player.rect.colliderect(self.cups_table_rect.inflate(100, 100)):
             self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w kubki"
         elif any(self.player.rect.colliderect(npc.rect.inflate(100, 100)) for npc in self.current_room.npcs):
@@ -281,7 +280,7 @@ class Game:
         elif self.player.rect.colliderect(self.wheel_rect.inflate(100, 100)):
             self.interaction_hint = "Naciśnij SPACJĘ, aby zakręcić kołem"
         elif isinstance(self.current_room, FeeRoom) and self.current_room.check_fee_interaction(self.player):
-            self.interaction_hint = "Naciśnij SPACJĘ, aby wpłacić monety"
+            self.interaction_hint = "Naciśnij SPACJĘ, aby wypłacić monety"
         else:
             self.interaction_hint = None
         
@@ -384,7 +383,9 @@ class Game:
         
         # Jeśli interfejs wpłat jest aktywny, rysuj go
         if isinstance(self.current_room, FeeRoom) and self.current_room.fee_interface_active:
-            self.draw_main_game()
+            self.draw_main_game()  # To rysuje grę PLUS interfejs FeeRoom
+            if self.paused:
+                self.draw_pause_menu()
             pygame.display.flip()
             return
         
@@ -444,35 +445,25 @@ class Game:
 
         # Debug info (tylko gdy nie ma pauzy)
         if not self.paused:
-            coords_text = font.render(f"X: {int(self.player.rect.x)}, Y: {int(self.player.rect.y)}", True, BLACK)
+            coords_text = font.render(f"X: {int(self.player.rect.x)} Y: {int(self.player.rect.y)}", True, BLACK)
             screen.blit(coords_text, (10, 10))
             
         # Pokazuj aktualny pokój
         room_text = font.render(f"Pokój: {self.get_current_room_name()}", True, BLACK)
         screen.blit(room_text, (10, 40))
         
-        # Pokazuj liczbę monet gracza
-        coins_text = font.render(f"Monety: {self.player.coins}", True, BLACK)
-        screen.blit(coins_text, (10, 70))
         
         # Pokazuj cooldown teleportacji (debug)
         if self.teleport_cooldown > 0:
             cooldown_text = font.render(f"Teleport cooldown: {self.teleport_cooldown:.1f}", True, BLACK)
             screen.blit(cooldown_text, (10, 100))
 
-        # Przycisk quit
-        pygame.draw.rect(screen, RED, self.quit_button)
-        quit_text = font.render("Zakończ grę", True, WHITE)
-        screen.blit(quit_text, (self.quit_button.x + 50, self.quit_button.y + 10))
-        
-
-
         # Przycisk quit (tylko gdy nie ma pauzy)
 
 
         # Kursor myszy
         mouse_pos = pygame.mouse.get_pos()
-        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND if self.quit_button.collidepoint(mouse_pos) else pygame.SYSTEM_CURSOR_ARROW)
+        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
     def draw_pause_menu(self):
         """Rysuje menu pauzy w stylu RPG"""
@@ -605,7 +596,7 @@ class Game:
         
         # Lista kontrolek w ramkach
         controls = [
-            ("WASD", "Poruszanie postacią"),
+            ("WASD lub Strzałki", "Poruszanie postacią"),
             ("SPACJA", "Interakcja z obiektami"),
             ("ESC", "Menu pauzy"),
             ("Mysz", "Interfejs użytkownika")
@@ -714,8 +705,14 @@ class Game:
                 self.player.save_data()
                 self.running = False
 
-            # Obsługa ESC dla menu pauzy
+            # Obsługa ESC dla menu pauzy - PRIORYTET NAJWYŻSZY
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                # Jeśli jest aktywny interfejs FeeRoom, zamknij go
+                if isinstance(self.current_room, FeeRoom) and self.current_room.fee_interface_active:
+                    self.current_room.close_fee_interface()
+                    continue
+                
+                # Inaczej obsłuż menu pauzy
                 if self.paused:
                     if self.pause_menu_tab != "main":
                         self.pause_menu_tab = "main"
@@ -731,9 +728,11 @@ class Game:
                 self.handle_pause_menu_events(event)
                 continue
 
-            if isinstance(self.current_room, FeeRoom):
+            # Obsługa interfejsu FeeRoom ma wysoki priorytet (ale niższy niż ESC)
+            if isinstance(self.current_room, FeeRoom) and self.current_room.fee_interface_active:
                 if self.current_room.handle_fee_event(event, self.player):
                     continue
+
             # Obsługa wydarzeń w zależności od stanu gry
             if self.in_dice_game:
                 self.dice_game.handle_event(event)
@@ -794,11 +793,7 @@ class Game:
                                 break
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.quit_button.collidepoint(event.pos):
-                    self.player.save_data()
-                    self.running = False
-                else:
-                    self.ui.handle_todo_click(event.pos)
+                self.ui.handle_todo_click(event.pos)
                     
     def start_minigame_with_loader(self, game_type):
         """Uruchamia minigrę z ekranem ładowania"""
