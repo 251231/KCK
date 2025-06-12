@@ -17,6 +17,7 @@ from DiceGame import DiceGame
 from CupsGame import CupsGame
 from WheelOfFortuneGame import WheelOfFortuneGame
 from MiniGameLoader import MiniGameLoader
+from ArcheryGame import ArcheryGame
 
 class Game:
     def __init__(self, username, music_manager=None):
@@ -44,7 +45,9 @@ class Game:
         self.in_cups_game = False
         self.wheel_game = WheelOfFortuneGame(self.player)
         self.in_wheel_game = False
-
+        self.archery_game = ArcheryGame(self.player,screen)
+        self.in_archery_game = False
+        self.archery_range_rect = pygame.Rect(400, 500, 80, 60)
         self.automat_rect = pygame.Rect(1000, 700, 50, 50)
         self.cups_table_rect = pygame.Rect(800, 600, 60, 60)
         self.wheel_rect = pygame.Rect(600, 600, 60, 60)
@@ -223,7 +226,7 @@ class Game:
     def is_in_any_interaction(self):
         """Sprawdza czy gracz jest w jakiejkolwiek interakcji (minigra, rozmowa z NPC, lub wpłaty)"""
         # Sprawdź minigry
-        if self.in_dice_game or self.in_cups_game or self.in_wheel_game:
+        if self.in_dice_game or self.in_cups_game or self.in_wheel_game or self.in_archery_game:
             return True
         
         # Sprawdź czy jakiś NPC ma aktywne okno czatu
@@ -281,6 +284,8 @@ class Game:
             self.interaction_hint = "Naciśnij SPACJĘ, aby zakręcić kołem"
         elif isinstance(self.current_room, FeeRoom) and self.current_room.check_fee_interaction(self.player):
             self.interaction_hint = "Naciśnij SPACJĘ, aby wypłacić monety"
+        elif self.player.rect.colliderect(self.archery_range_rect.inflate(100, 100)):
+            self.interaction_hint = "Naciśnij SPACJĘ, aby strzelać z łuku"
         else:
             self.interaction_hint = None
         
@@ -371,6 +376,12 @@ class Game:
                 self.draw_pause_menu()
             pygame.display.flip()
             return
+        elif self.in_archery_game:
+            self.archery_game.draw()
+            if self.paused:
+                self.draw_pause_menu()
+            pygame.display.flip()
+            return
   
         # Jeśli jakiś NPC ma aktywne okno czatu, rysuj tylko okno czatu
         for npc in self.current_room.npcs:
@@ -442,7 +453,26 @@ class Game:
             pygame.draw.rect(screen, (0, 100, 200), (*wheel_pos, self.wheel_rect.width, self.wheel_rect.height))
             wheel_text = font.render("KOŁO", True, (255, 255, 0))
             screen.blit(wheel_text, (wheel_pos[0], wheel_pos[1] - 20))
-
+        archery_screen_pos = (
+            self.archery_range_rect.x - self.camera_x,
+            self.archery_range_rect.y - self.camera_y
+        )
+        if (0 <= archery_screen_pos[0] <= SCREEN_WIDTH and 
+            0 <= archery_screen_pos[1] <= SCREEN_HEIGHT):
+            
+            # Rysuj strefę łuczniczą
+            pygame.draw.rect(screen, (139, 69, 19), 
+                        (*archery_screen_pos, self.archery_range_rect.width, self.archery_range_rect.height))
+            pygame.draw.rect(screen, (101, 67, 33), 
+                        (*archery_screen_pos, self.archery_range_rect.width, self.archery_range_rect.height), 3)
+            
+            # Dodaj tekst "ŁUCZNICTWO"
+            archery_text = font.render("ŁUCZNICTWO", True, (255, 215, 0))
+            text_rect = archery_text.get_rect(center=(
+                archery_screen_pos[0] + self.archery_range_rect.width // 2,
+                archery_screen_pos[1] + self.archery_range_rect.height // 2
+            ))
+            screen.blit(archery_text, text_rect)
         # Debug info (tylko gdy nie ma pauzy)
         if not self.paused:
             coords_text = font.render(f"X: {int(self.player.rect.x)} Y: {int(self.player.rect.y)}", True, BLACK)
@@ -752,6 +782,12 @@ class Game:
                     self.in_wheel_game = False
                 continue
 
+            elif self.in_archery_game:
+                self.archery_game.handle_event(event)
+                if not self.archery_game.in_game:
+                    self.in_archery_game = False
+                continue
+
             # Sprawdź czy jakiś NPC ma aktywne okno czatu
             any_npc_handled = False
             for npc in self.current_room.npcs:
@@ -784,7 +820,8 @@ class Game:
                         self.player.rect.colliderect(self.wheel_rect.inflate(100, 100))
                     ):
                         self.start_minigame_with_loader("wheel")
-
+                    elif self.player.rect.colliderect(self.archery_range_rect.inflate(100, 100)):
+                        self.start_minigame_with_loader("archery")
                     # Sprawdź interakcję z NPCs
                     else:
                         for npc in self.current_room.npcs:
@@ -812,3 +849,6 @@ class Game:
             elif game_type == "wheel":
                 self.in_wheel_game = True
                 self.wheel_game.reset_game()
+            elif game_type == "archery":
+                self.in_archery_game = True
+                self.archery_game.reset_game()
