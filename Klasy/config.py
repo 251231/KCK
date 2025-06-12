@@ -21,7 +21,7 @@ player_speed = 7
 player_size = 90
 pygame.init()
 pygame.display.set_caption("GameDziekanat")
-font = pygame.font.SysFont('Arial', 24)
+font = pygame.font.Font('assets/Czcionka.ttf', 24)
 info = pygame.display.Info()
 SCREEN_WIDTH = info.current_w
 SCREEN_HEIGHT = info.current_h

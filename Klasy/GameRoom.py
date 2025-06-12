@@ -13,7 +13,7 @@ class GameRoom(Room):
             },
             entry_points={
                 "default": (100, 100),
-                "from_main": (957, 1904)
+                "from_main": (786, 1555)
             }
         )
 
