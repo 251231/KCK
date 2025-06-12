@@ -527,3 +527,4 @@ class CupsGame:
         self.max_bet = min(100, getattr(self.player, 'coins', 0))
         if self.bet_amount > self.max_bet:
             self.bet_amount = max(1, self.max_bet)
+        self.in_game = True
