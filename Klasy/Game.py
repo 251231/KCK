@@ -244,6 +244,8 @@ class Game:
         if self.paused:
             return
             
+        if self.in_beetle_game:
+            self.beetle_game.update(delta_time)
         # Jeśli jesteśmy w interakcji, nie aktualizuj gry głównej
         if self.is_in_any_interaction():
             # Aktualizuj tylko FeeRoom jeśli jego interfejs jest aktywny
@@ -848,4 +850,4 @@ class Game:
                 self.wheel_game.reset_game()
             elif game_type == "beetle":
                 self.in_beetle_game = True
-            self.beetle_game.reset_game()
+                self.beetle_game.reset_game()

@@ -271,7 +271,7 @@ class BeetleRaceGame:
         self.game_state = "racing"
         self.race_timer = 0
         self.winner = None
-        
+        self.in_game = True
         # Dodaj ogłoszenia wyścigu
         self.race_announcements = [
             "Żuki na pozycjach startowych!",
@@ -319,10 +319,11 @@ class BeetleRaceGame:
         if self.beetles[self.selected_beetle] == self.winner:
             winnings = int(self.bet_amount * self.winner.odds)
             self.player.coins += winnings
-            self.player.add_todo_item(f"🏆 Wygrałeś wyścig żuków! +{winnings} monet")
+            # Zamiast todo item — komunikat
+            self.race_announcements.append(f"🏆 Wygrałeś {winnings} monet!")
         else:
-            self.player.add_todo_item(f"😔 Przegrałeś wyścig żuków. -{self.bet_amount} monet")
-    
+            self.race_announcements.append(f"😔 Przegrałeś {self.bet_amount} monet")
+        
     def create_fireworks(self):
         """Tworzy efekt fajerwerków"""
         for _ in range(20):
