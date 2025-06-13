@@ -30,9 +30,9 @@ class MainRoom(Room):
         """Konfiguruje pozycje lamp - łatwe do edycji"""
         self.lamps = [
             # Dodaj lub usuń lampy tutaj, zmieniając pozycje (x, y) i opcjonalnie prędkość animacji
-            AnimatedLamp(x=300, y=200, animation_speed=250, scale=10),  # Pierwsza lampa
-            AnimatedLamp(x=700, y=150, animation_speed=200),  # Druga lampa
-            AnimatedLamp(x=500, y=400, animation_speed=300),  # Trzecia lampa
+            AnimatedLamp(x=570, y=50, animation_speed=250, scale=3), 
+            AnimatedLamp(x=1050, y=50, animation_speed=250, scale=3), # Pierwsza lampa
+              # Trzecia lampa
             # AnimatedLamp(x=900, y=300, animation_speed=180),  # Możesz dodać więcej
         ]
     

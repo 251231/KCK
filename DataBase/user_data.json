@@ -22,5 +22,8 @@
     },
     "Sebastian": {
         "coins": 100
+    },
+    "1": {
+        "coins": 0
     }
 }
