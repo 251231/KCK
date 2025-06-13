@@ -74,7 +74,7 @@ class Beetle:
         """Aplikuje boost (podkarmienie żuka)"""
         self.is_boosted = True
         self.boost_timer = 5.0  # 5 sekund boosta
-        self.speed_variation = random.uniform(1.2, 1.5)  # Zwiększ prędkość
+        self.speed_variation = random.uniform(1.1, 1.5)  # Zwiększ prędkość
     
     def draw(self, surface, offset_x=0):
         """Rysuje żuka"""
@@ -166,7 +166,7 @@ class BeetleRaceGame:
             SCREEN_WIDTH * 0.05,  # 5% od lewej
             SCREEN_HEIGHT * 0.05,  # 5% od góry
             SCREEN_WIDTH * 0.9,    # 90% szerokości
-            SCREEN_HEIGHT * 0.25   # 25% wysokości
+            SCREEN_HEIGHT * 0.45   # 35% wysokości
         )
         
         self.track_rect = pygame.Rect(
@@ -320,9 +320,9 @@ class BeetleRaceGame:
             winnings = int(self.bet_amount * self.winner.odds)
             self.player.coins += winnings
             # Zamiast todo item — komunikat
-            self.race_announcements.append(f"🏆 Wygrałeś {winnings} monet!")
+            self.race_announcements.append(f"Wygrałeś {winnings} monet!")
         else:
-            self.race_announcements.append(f"😔 Przegrałeś {self.bet_amount} monet")
+            self.race_announcements.append(f"Przegrałeś {self.bet_amount} monet")
         
     def create_fireworks(self):
         """Tworzy efekt fajerwerków"""
@@ -372,16 +372,17 @@ class BeetleRaceGame:
         pygame.draw.rect(self.screen, (100, 150, 100), self.betting_panel_rect, 3, border_radius=15)
         
         # Tytuł
-        title = self.font_large.render("🏁 WYŚCIG ŻUKÓW - OBSTAWIANIE 🏁", True, (255, 255, 100))
+        title = self.font_large.render(" WYŚCIG ŻUKÓW - OBSTAWIANIE ", True, (255, 255, 100))
         title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, self.betting_panel_rect.y + 30))
         self.screen.blit(title, title_rect)
         
         # Informacje o grze
-        info_y = self.betting_panel_rect.y + 70
+        info_y = self.betting_panel_rect.y + 60
         info_lines = [
-            "Wybierz żuka (↑↓), ustaw zakład (←→), potwierdź (SPACJA)",
+            "Wybierz żuka (Strzałki Góra-Dół), ustaw zakład (Strzałki Prawo-Lewo), potwierdź (SPACJA)",
             f"Twoje monety: {self.player.coins} | Zakład: {self.bet_amount}",
             "Naciśnij 'B' aby podkarmić wybranego żuka (+20 monet, większa szansa)",
+            "Naciśnij ESC aby wyjść z wyścigu",
         ]
         
         for i, line in enumerate(info_lines):
@@ -391,7 +392,7 @@ class BeetleRaceGame:
             self.screen.blit(text, text_rect)
         
         # Lista żuków
-        beetle_y_start = info_y + 80
+        beetle_y_start = info_y + 120
         beetle_list_height = min(150, SCREEN_HEIGHT * 0.4)  # Maksymalna wysokość listy
         row_height = beetle_list_height / len(self.beetles)
         
@@ -415,7 +416,7 @@ class BeetleRaceGame:
             color = (255, 255, 100) if i == self.selected_beetle else (200, 200, 200)
             if beetle.is_boosted:
                 color = (255, 255, 0)  # Złoty dla podboosted
-                beetle_info += " ⚡BOOST!"
+                beetle_info += "BOOST!"
             
             text = self.font_small.render(beetle_info, True, color)
             self.screen.blit(text, (self.betting_panel_rect.x + 20, y - 10))
@@ -460,13 +461,13 @@ class BeetleRaceGame:
             beetle.draw(self.screen)
             
             # Numer żuka
-            number_text = self.font_small.render(str(i + 1), True, (255, 255, 255))
-            self.screen.blit(number_text, (beetle.x - 20, beetle.y - 10))
+            #number_text = self.font_small.render(str(i + 1), True, (255, 255, 255))
+            #self.screen.blit(number_text, (beetle.x - 20, beetle.y - 10))
             
             # Podświetl obstawiany żuk
-            if i == self.selected_beetle:
-                highlight_rect = pygame.Rect(beetle.x - 15, beetle.y - 15, 30, 30)
-                pygame.draw.rect(self.screen, (255, 255, 0), highlight_rect, 2)
+            #if i == self.selected_beetle:
+            #    highlight_rect = pygame.Rect(beetle.x - 15, beetle.y - 15, 30, 30)
+            #    pygame.draw.rect(self.screen, (255, 255, 0), highlight_rect, 2)
         
         # Informacje o wyścigu
         info_y = 20
@@ -541,12 +542,12 @@ class BeetleRaceGame:
         player_won = self.beetles[self.selected_beetle] == self.winner
         
         if player_won:
-            result_title = "🎉 GRATULACJE! 🎉"
+            result_title = " GRATULACJE! "
             result_color = (100, 255, 100)
             winnings = int(self.bet_amount * self.winner.odds)
             result_text = f"Wygrałeś {winnings} monet!"
         else:
-            result_title = "😔 Przegrana"
+            result_title = " Przegrana"
             result_color = (255, 100, 100)
             result_text = f"Straciłeś {self.bet_amount} monet"
         
