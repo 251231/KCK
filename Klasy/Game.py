@@ -17,6 +17,7 @@ from DiceGame import DiceGame
 from CupsGame import CupsGame
 from WheelOfFortuneGame import WheelOfFortuneGame
 from MiniGameLoader import MiniGameLoader
+from AnimatedLamp import AnimatedLamp
 
 class Game:
     def __init__(self, username, music_manager=None):
@@ -301,7 +302,8 @@ class Game:
             npc.update()
         # Aktualizuj kamerę
         self.update_camera()
-        
+        if hasattr(self.current_room, 'update'):
+            self.current_room.update(self, delta_time)
         # Sprawdź teleportację (tylko jeśli cooldown minął)
         if self.teleport_cooldown <= 0:
             self.check_room_transitions()
