@@ -8,7 +8,7 @@ class FeeRoom(Room):
         super().__init__(
             bg_path="assets/FeeRoom.png",
             collision_path="assets/FeeRoom_kolizje.png",
-            npcs=[NPC(300, 400)],
+            npcs=None,
             teleport_zones={
                 (255, 255, 0): ("MainRoom", "from_fee"),  
             },

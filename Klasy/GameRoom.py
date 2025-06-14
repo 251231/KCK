@@ -7,7 +7,7 @@ class GameRoom(Room):
         super().__init__(
             bg_path="assets/GameRoom.png",
             collision_path="assets/GameRoom_kolizje.png",
-            npcs=[NPC(300, 400)],
+            npcs=None,
             teleport_zones={
                 (255, 255, 0): ("MainRoom", "from_game"),  
             },
@@ -16,6 +16,7 @@ class GameRoom(Room):
                 "from_main": (786, 1555)
             }
         )
+        
 
     def update(self, game, delta_time):
         # np. minigra, sprawdzenie czegoś, zadanie
