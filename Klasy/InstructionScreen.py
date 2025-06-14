@@ -17,21 +17,14 @@ class InstructionScreen:
             "",
             "PORUSZANIE:",
             "WASD lub Strzałki - Ruch postaci",
-            "SPACJA - Skok/Akcja",
-            "SHIFT - Bieg",
-            "",
             "PODSTAWOWE ZASADY:",
-            "- Zbieraj przedmioty na mapie",
-            "- Unikaj przeszkód i przeciwników",
-            "- Znajdź wyjście z poziomu",
-            "- Wykonuj zadania dziekanatu",
-            "- Rozmawiaj z NPC aby otrzymać misje",
+            "- Zbieraj monety w minigrach",
+            "- Opłacaj za nie BRAKUJĄCE ECTSY",
+            "- Sprawdź kartę ocen czy na pewno masz wszystko zaliczon",
+            "- Porozmawiaj z psychologiem, jeśli masz taką potrzebę",
             "",
             "INTERFEJS:",
             "ESC - Menu pauzy",
-            "TAB - Inwentarz",
-            "M - Mapa",
-            "",
             "Powodzenia w przygodzie!"
         ]
     
@@ -76,10 +69,10 @@ class InstructionScreen:
     
     def draw_blinking_text(self, surface, text, font_obj, color, pos, blink_speed=30):
         """Rysuje migający tekst"""
-        if (pygame.time.get_ticks() // blink_speed) % 2:
-            text_surface = self.create_text_surface(text, font_obj, color)
-            text_rect = text_surface.get_rect(center=pos)
-            surface.blit(text_surface, text_rect)
+        
+        text_surface = self.create_text_surface(text, font_obj, color)
+        text_rect = text_surface.get_rect(center=pos)
+        surface.blit(text_surface, text_rect)
     
     def draw_title_with_shadow(self, surface, text, x, y, main_color, shadow_color):
         """Rysuje tytuł z cieniem dla efektu pixel art"""
@@ -121,12 +114,12 @@ class InstructionScreen:
             screen.blit(overlay, (0, 0))
             
             # Tytuł gry z cieniem
-            self.draw_title_with_shadow(screen, "GAMEDZIKANAT", 
+            self.draw_title_with_shadow(screen, "GAMEDZIEKANAT", 
                                       SCREEN_WIDTH // 2, 80, 
                                       YELLOW, self.DARK_BRICK)
             
             # Ramka wokół tytułu
-            title_text = font.render("GAMEDZIKANAT", True, YELLOW)
+            title_text = font.render("GAMEDZIEKANAT", True, YELLOW)
             title_rect = title_text.get_rect(center=(SCREEN_WIDTH // 2, 80))
             border_rect = pygame.Rect(title_rect.x - 15, title_rect.y - 10, 
                                     title_rect.width + 30, title_rect.height + 20)
@@ -166,9 +159,7 @@ class InstructionScreen:
                                   font, YELLOW, 
                                   (SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100))
             
-            self.draw_blinking_text(screen, "ESC - POWROT DO MENU", 
-                                  font, self.LIGHT_BRICK, 
-                                  (SCREEN_WIDTH // 2, SCREEN_HEIGHT - 60))
+            
             
             # Ramka wokół całego ekranu
             screen_border = pygame.Rect(5, 5, SCREEN_WIDTH - 10, SCREEN_HEIGHT - 10)

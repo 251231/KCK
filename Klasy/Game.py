@@ -17,7 +17,11 @@ from DiceGame import DiceGame
 from CupsGame import CupsGame
 from WheelOfFortuneGame import WheelOfFortuneGame
 from MiniGameLoader import MiniGameLoader
+
+from PsychologistRoom import PsychologistRoom
+
 from AnimatedLamp import AnimatedLamp
+
 
 class Game:
     def __init__(self, username, music_manager=None):
@@ -46,9 +50,10 @@ class Game:
         self.wheel_game = WheelOfFortuneGame(self.player)
         self.in_wheel_game = False
 
-        self.automat_rect = pygame.Rect(1000, 700, 50, 50)
-        self.cups_table_rect = pygame.Rect(800, 600, 60, 60)
-        self.wheel_rect = pygame.Rect(600, 600, 60, 60)
+        
+        self.automat_rect = pygame.Rect(786, 407, 50, 50)
+        self.cups_table_rect = pygame.Rect(1207, 408, 60, 60)
+        self.wheel_rect = pygame.Rect(369, 433, 60, 60)
         self.interaction_hint = None
 
         # Menu pauzy
@@ -238,7 +243,8 @@ class Game:
             "GameRoom": GameRoom(),
             "RegisterRoom": RegisterRoom(),
             "FeeRoom": FeeRoom(),
-            "DataRoom": DataRoom()
+            "DataRoom": DataRoom(),
+            "PsychologistRoom": PsychologistRoom()
         }
 
     def is_in_any_interaction(self):
@@ -313,11 +319,12 @@ class Game:
         
     def update_interaction_hints(self):
         """Aktualizuje podpowiedzi interakcji"""
-        if self.player.rect.colliderect(self.automat_rect.inflate(100, 100)):
+        
+        if self.player.rect.colliderect(self.automat_rect.inflate(100, 100)) and self.get_current_room_name() == "GameRoom":
             self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w kości"
-        elif self.player.rect.colliderect(self.cups_table_rect.inflate(100, 100)):
+        elif self.player.rect.colliderect(self.cups_table_rect.inflate(100, 100)) and self.get_current_room_name() == "GameRoom":
             self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w kubki"
-        elif any(self.player.rect.colliderect(npc.rect.inflate(100, 100)) for npc in self.current_room.npcs):
+        elif any(self.player.rect.colliderect(npc.rect.inflate(100, 100)) for npc in self.current_room.npcs) and self.get_current_room_name() == "GameRoom":
             self.interaction_hint = "Naciśnij SPACJĘ, aby porozmawiać"
         elif self.player.rect.colliderect(self.wheel_rect.inflate(100, 100)):
             self.interaction_hint = "Naciśnij SPACJĘ, aby zakręcić kołem"
@@ -457,33 +464,56 @@ class Game:
             screen.blit(hint_text, (hint_box.x + 20, hint_box.y + 10))
             
         # Rysuj stół z kubkami
-        cups_table_screen_pos = (
-            self.cups_table_rect.x - self.camera_x,
-            self.cups_table_rect.y - self.camera_y
-        )
-        if (0 <= cups_table_screen_pos[0] <= SCREEN_WIDTH and 
-            0 <= cups_table_screen_pos[1] <= SCREEN_HEIGHT):
-            
-            # Rysuj stół
-            pygame.draw.rect(screen, (139, 69, 19), 
-                           (*cups_table_screen_pos, self.cups_table_rect.width, self.cups_table_rect.height))
-            pygame.draw.rect(screen, (101, 67, 33), 
-                           (*cups_table_screen_pos, self.cups_table_rect.width, self.cups_table_rect.height), 3)
-            
-            # Dodaj tekst "KUBKI"
-            table_text = font.render("KUBKI", True, (255, 215, 0))
-            text_rect = table_text.get_rect(center=(
-                cups_table_screen_pos[0] + self.cups_table_rect.width // 2,
-                cups_table_screen_pos[1] + self.cups_table_rect.height // 2
-            ))
-            screen.blit(table_text, text_rect)
+        # if self.get_current_room_name() == "GameRoom":
+        #     cups_table_screen_pos = (
+        #         self.cups_table_rect.x - self.camera_x,
+        #         self.cups_table_rect.y - self.camera_y
+        #     )
+        #     if (0 <= cups_table_screen_pos[0] <= SCREEN_WIDTH and 
+        #         0 <= cups_table_screen_pos[1] <= SCREEN_HEIGHT):
+                
+        #         # Rysuj stół
+        #         pygame.draw.rect(screen, (139, 69, 19), 
+        #                     (*cups_table_screen_pos, self.cups_table_rect.width, self.cups_table_rect.height))
+        #         pygame.draw.rect(screen, (101, 67, 33), 
+        #                     (*cups_table_screen_pos, self.cups_table_rect.width, self.cups_table_rect.height), 3)
+                
+        #         # Dodaj tekst "KUBKI"
+        #         table_text = font.render("KUBKI", True, (255, 215, 0))
+        #         text_rect = table_text.get_rect(center=(
+        #             cups_table_screen_pos[0] + self.cups_table_rect.width // 2,
+        #             cups_table_screen_pos[1] + self.cups_table_rect.height // 2
+        #         ))
+        #         screen.blit(table_text, text_rect)
+
+        # if self.get_current_room_name() == "GameRoom":
+        #     dice_table_screen_pos = (
+        #         self.dice_table_rect.x - self.camera_x,
+        #         self.dice_table_rect.y - self.camera_y
+        #     )
+        #     if (0 <= dice_table_screen_pos[0] <= SCREEN_WIDTH and 
+        #         0 <= dice_table_screen_pos[1] <= SCREEN_HEIGHT):
+                
+        #         # Rysuj stół do gry w kości
+        #         pygame.draw.rect(screen, (139, 69, 19), 
+        #                     (*dice_table_screen_pos, self.dice_table_rect.width, self.dice_table_rect.height))
+        #         pygame.draw.rect(screen, (101, 67, 33), 
+        #                     (*dice_table_screen_pos, self.dice_table_rect.width, self.dice_table_rect.height), 3)
+                
+        #         # Dodaj tekst "KOŚCI"
+        #         table_text = font.render("KOŚCI", True, (255, 215, 0))
+        #         text_rect = table_text.get_rect(center=(
+        #             dice_table_screen_pos[0] + self.dice_table_rect.width // 2,
+        #             dice_table_screen_pos[1] + self.dice_table_rect.height // 2
+        #         ))
+        #         screen.blit(table_text, text_rect)
 
         # Rysuj strefę koła fortuny tylko w GameRoom
-        if self.get_current_room_name() == "GameRoom":
-            wheel_pos = (self.wheel_rect.x - self.camera_x, self.wheel_rect.y - self.camera_y)
-            pygame.draw.rect(screen, (0, 100, 200), (*wheel_pos, self.wheel_rect.width, self.wheel_rect.height))
-            wheel_text = font.render("KOŁO", True, (255, 255, 0))
-            screen.blit(wheel_text, (wheel_pos[0], wheel_pos[1] - 20))
+        # if self.get_current_room_name() == "GameRoom":
+        #     wheel_pos = (self.wheel_rect.x - self.camera_x, self.wheel_rect.y - self.camera_y)
+        #     pygame.draw.rect(screen, (0, 100, 200), (*wheel_pos, self.wheel_rect.width, self.wheel_rect.height))
+        #     wheel_text = font.render("KOŁO", True, (255, 255, 0))
+        #     screen.blit(wheel_text, (wheel_pos[0], wheel_pos[1] - 20))
 
         # Debug info (tylko gdy nie ma pauzy)
         if not self.paused:

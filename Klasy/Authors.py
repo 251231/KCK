@@ -1,18 +1,18 @@
 from Room import Room
 from NPC import *
 
-class RegisterRoom(Room):
+class Authors(Room):
     def __init__(self):
         super().__init__(
-                bg_path="assets/RegisterRoom.png",
-                collision_path="assets/RegisterRoom_kolizje.png",
+                bg_path="assets/Authors.png",
+                collision_path=None,
                 npcs=None,
                 teleport_zones={
-                    (255, 255, 0): ("MainRoom", "from_Register"),  
+                    (255, 255, 0): ("MainRoom", "from_data"),  
                 },
                 entry_points={
                     "default": (100, 100),
-                    "from_main": (1361, 550),    # Gdzie gracz pojawia się przychodząc z MainRoom
+                    "from_main": (137, 550),    # Gdzie gracz pojawia się przychodząc z MainRoom
                     
                 }
             ),
