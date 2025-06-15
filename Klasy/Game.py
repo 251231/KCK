@@ -21,7 +21,7 @@ from MiniGameLoader import MiniGameLoader
 from PsychologistRoom import PsychologistRoom
 
 from AnimatedLamp import AnimatedLamp
-
+from CoffeeMachine import CoffeeMachine
 
 class Game:
     def __init__(self, username, music_manager=None):
@@ -76,6 +76,7 @@ class Game:
         
         self.init_pause_menu()
         self.init_rpg_fonts()
+        self.player_near_coffee_machine = False
 
     def init_rpg_fonts(self):
         """Inicjalizuje czcionki w stylu RPG"""
@@ -285,7 +286,6 @@ class Game:
         # DODANE: Aktualizuj animację menu
             self.update_menu_animation(delta_time)
             return
-    
     # DODANE: Aktualizuj animację menu również gdy gra nie jest spauzowana
         self.update_menu_animation(delta_time)
             
@@ -310,6 +310,11 @@ class Game:
         self.update_camera()
         if hasattr(self.current_room, 'update'):
             self.current_room.update(self, delta_time)
+                
+        if isinstance(self.current_room, MainRoom):
+            self.handle_coffee_machine_interaction()
+        if isinstance(self.current_room, MainRoom) and hasattr(self.current_room, 'coffee_machine'):
+            self.current_room.coffee_machine.update_player_speed_boost(self.player, delta_time)
         # Sprawdź teleportację (tylko jeśli cooldown minął)
         if self.teleport_cooldown <= 0:
             self.check_room_transitions()
@@ -420,7 +425,11 @@ class Game:
                 self.draw_pause_menu()
             pygame.display.flip()
             return
-  
+        if hasattr(self.player, 'speed_boost_timer') and self.player.speed_boost_timer > 0:
+            boost_seconds = int(self.player.speed_boost_timer / 1000)
+            font = pygame.font.Font(None, 32)
+            boost_text = font.render(f"Boost kawy: {boost_seconds}s", True, GREEN)
+            screen.blit(boost_text, (10, 50))
         # Jeśli jakiś NPC ma aktywne okno czatu, rysuj tylko okno czatu
         for npc in self.current_room.npcs:
             if npc.chat_window.active:
@@ -955,7 +964,11 @@ class Game:
                         self.player.rect.colliderect(self.wheel_rect.inflate(100, 100))
                     ):
                         self.start_minigame_with_loader("wheel")
-
+                    if isinstance(self.current_room, MainRoom) and self.player_near_coffee_machine:
+                        if hasattr(self.current_room, 'coffee_machine'):
+                            success = self.current_room.coffee_machine.try_buy_coffee(self.player)
+                            if success:
+                                print(f"Gracz kupił kawę! Pozostało monet: {self.player.coins}")
                     # Sprawdź interakcję z NPCs
                     else:
                         for npc in self.current_room.npcs:
@@ -983,3 +996,18 @@ class Game:
             elif game_type == "wheel":
                 self.in_wheel_game = True
                 self.wheel_game.reset_game()
+
+    def handle_coffee_machine_interaction(self):
+        """Obsługuje interakcje z automatem kawy w MainRoom"""
+        if hasattr(self.current_room, 'coffee_machine'):
+            is_near = self.current_room.coffee_machine.is_player_near(
+                self.player.rect.x, self.player.rect.y)
+            
+            if is_near and not self.player_near_coffee_machine:
+                # Gracz zbliżył się do automatu
+                self.current_room.coffee_machine.show_interaction_prompt()
+                self.player_near_coffee_machine = True
+            elif not is_near and self.player_near_coffee_machine:
+                # Gracz oddalił się od automatu
+                self.current_room.coffee_machine.hide_interaction_prompt()
+                self.player_near_coffee_machine = False
