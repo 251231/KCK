@@ -37,10 +37,10 @@ class CupsGame:
     def _init_fonts(self):
         """Inicjalizuje wszystkie czcionki"""
         self.fonts = {
-            'small': pygame.font.Font(None, 28),
-            'normal': pygame.font.Font(None, 36),
-            'large': pygame.font.Font(None, 48),
-            'title': pygame.font.Font(None, 60)
+            'small': pygame.font.Font('assets/Czcionka.ttf', 22),
+            'normal': pygame.font.Font('assets/Czcionka.ttf', 28),
+            'large': pygame.font.Font('assets/Czcionka.ttf', 36),
+            'title': pygame.font.Font('assets/Czcionka.ttf', 48)
         }
 
     def _init_positions(self):
@@ -57,10 +57,10 @@ class CupsGame:
         
         # Przyciski - przesunięte wyżej, żeby nie zasłaniały tekstu
         self.buttons = {
-            'bet_up': pygame.Rect(250, SCREEN_HEIGHT - 230, 40, 35),        # Przesunięte wyżej
-            'bet_down': pygame.Rect(295, SCREEN_HEIGHT - 230, 40, 35),      # Przesunięte wyżej
-            'bet_up_big': pygame.Rect(340, SCREEN_HEIGHT - 230, 60, 35),    # Przesunięte wyżej
-            'bet_down_big': pygame.Rect(405, SCREEN_HEIGHT - 230, 60, 35),  # Przesunięte wyżej
+            'bet_up': pygame.Rect(250, SCREEN_HEIGHT - 260, 40, 35),        # Przesunięte wyżej
+            'bet_down': pygame.Rect(295, SCREEN_HEIGHT - 260, 40, 35),      # Przesunięte wyżej
+            'bet_up_big': pygame.Rect(340, SCREEN_HEIGHT - 260, 60, 35),    # Przesunięte wyżej
+            'bet_down_big': pygame.Rect(405, SCREEN_HEIGHT - 260, 60, 35),  # Przesunięte wyżej
             'play': pygame.Rect(center_x - 80, 380, 160, 50),               # Przesunięty niżej
             'exit': pygame.Rect(SCREEN_WIDTH - 120, 10, 110, 40)
         }
@@ -324,19 +324,19 @@ class CupsGame:
 
     def _draw_betting_panel(self):
         """Rysuje panel zakładów - większy i z lepszym rozmieszczeniem"""
-        panel_rect = pygame.Rect(40, SCREEN_HEIGHT - 370, 480, 180)  # Większy panel
+        panel_rect = pygame.Rect(40, SCREEN_HEIGHT - 400, 520, 220) 
         self._draw_panel(panel_rect)
         
-        y_start = SCREEN_HEIGHT - 360
+        y_start = SCREEN_HEIGHT - 390
         
         title = self.fonts['normal'].render("ZAKŁAD", True, self.colors['gold'])
         screen.blit(title, (55, y_start))
         
         # Większe odstępy między tekstami
         texts = [
-            (f"Stawka: {self.bet_amount} monet", self.colors['text_white'], 35),
-            (f"Potencjalna wygrana: {self.bet_amount * 3} monet", self.colors['green'], 60),
-            (f"Twoje monety: {getattr(self.player, 'coins', 0)}", self.colors['text_white'], 85)
+            (f"Stawka: {self.bet_amount} monet", self.colors['text_white'], 30),
+            (f"Potencjalna wygrana: {self.bet_amount * 3} monet", self.colors['green'], 50),
+            (f"Twoje monety: {getattr(self.player, 'coins', 0)}", self.colors['text_white'], 70)
         ]
         
         for text, color, offset in texts:
@@ -367,7 +367,7 @@ class CupsGame:
 
     def _draw_instructions(self):
         """Rysuje panel instrukcji - większy"""
-        instr_rect = pygame.Rect(SCREEN_WIDTH - 300, 80, 280, 180)  # Większy panel
+        instr_rect = pygame.Rect(SCREEN_WIDTH - 340, 80, 330, 200)  # Większy panel
         self._draw_panel(instr_rect)
         
         title = self.fonts['normal'].render("INSTRUKCJE", True, self.colors['gold'])
@@ -378,7 +378,7 @@ class CupsGame:
         for i, instruction in enumerate(instructions):
             if instruction:
                 text = self.fonts['small'].render(instruction, True, self.colors['text_white'])
-                screen.blit(text, (SCREEN_WIDTH - 290, 125 + i * 25))  # Większe odstępy
+                screen.blit(text, (SCREEN_WIDTH - 310, 120 + i * 22))  # Większe odstępy
 
     def _get_instructions(self):
         """Zwraca uproszczone instrukcje"""
@@ -435,7 +435,7 @@ class CupsGame:
 
     def _draw_result(self):
         """Rysuje panel z wynikiem"""
-        result_rect = pygame.Rect(SCREEN_WIDTH//2 - 200, 320, 400, 50)
+        result_rect = pygame.Rect(SCREEN_WIDTH//2 - 250, 330, 500, 50)
         
         if "Wygrana" in self.result:
             bg_color = self.colors['green']

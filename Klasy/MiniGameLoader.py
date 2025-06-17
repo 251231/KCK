@@ -48,6 +48,12 @@ class MiniGameLoader:
                 "Smarowanie łożysk...",
                 "Kalibracja nagród...",
                 "Koło gotowe do kręcenia!"
+            ],
+            "beetles": [
+                "Przygotowywanie toru wyścigowego...",
+                "Trenowanie żuków...",
+                "Rozdawanie numerków startowych...",
+                "Żuki gotowe do wyścigu!"
             ]
         }
         
@@ -172,6 +178,56 @@ class MiniGameLoader:
             # Środek koła
             pygame.draw.circle(screen, self.warm_colors['accent_red'], (center_x, center_y), 8)
         
+        elif self.game_name == "beetles":
+            # Rysuj żuki wyścigowe
+            track_radius = 40
+            num_beetles = 4
+            
+            for i in range(num_beetles):
+                # Każdy żuk porusza się z różną prędkością po okręgu
+                angle = (self.rotation_angle * (1 + i * 0.3) + i * 90) % 360
+                x = center_x + track_radius * math.cos(math.radians(angle))
+                y = center_y + track_radius * math.sin(math.radians(angle))
+                
+                # Kolory żuków
+                beetle_colors = [
+                    self.warm_colors['accent_warm'],    # Pomarańczowy
+                    self.warm_colors['accent_gold'],    # Złoty
+                    self.warm_colors['accent_red'],     # Czerwony
+                    (120, 180, 255)                     # Niebieski
+                ]
+                
+                beetle_color = beetle_colors[i % len(beetle_colors)]
+                
+                # Ciało żuka (elipsa)
+                beetle_body = pygame.Rect(x - 8, y - 5, 16, 10)
+                pygame.draw.ellipse(screen, beetle_color, beetle_body)
+                pygame.draw.ellipse(screen, self.warm_colors['text_cream'], beetle_body, 1)
+                
+                # Głowa żuka
+                head_x = x + 8 * math.cos(math.radians(angle))
+                head_y = y + 8 * math.sin(math.radians(angle))
+                pygame.draw.circle(screen, beetle_color, (int(head_x), int(head_y)), 4)
+                
+                # Nóżki żuka (małe linie)
+                for leg in range(3):
+                    leg_angle = angle + 90 + (leg - 1) * 30
+                    leg_x = x + 6 * math.cos(math.radians(leg_angle))
+                    leg_y = y + 6 * math.sin(math.radians(leg_angle))
+                    pygame.draw.line(screen, self.warm_colors['text_cream'], 
+                                   (int(x), int(y)), (int(leg_x), int(leg_y)), 1)
+                
+                # Numer na żuku
+                number_text = str(i + 1)
+                number_surface = pygame.font.Font(None, 16).render(number_text, True, self.warm_colors['text_cream'])
+                number_rect = number_surface.get_rect(center=(int(x), int(y)))
+                screen.blit(number_surface, number_rect)
+            
+            # Tor wyścigowy (okrąg)
+            pygame.draw.circle(screen, self.warm_colors['accent_warm'], (center_x, center_y), track_radius + 15, 2)
+            pygame.draw.circle(screen, self.warm_colors['accent_warm'], (center_x, center_y), track_radius - 15, 2)
+            
+        
         else:
             # Domyślny spinner
             for i in range(8):
@@ -236,7 +292,8 @@ class MiniGameLoader:
         game_titles = {
             "dice": "Gra w Kości",
             "cups": "Gra w Kubki", 
-            "wheel": "Koło Fortuny"
+            "wheel": "Koło Fortuny",
+            "beetles": "Wyścig Żuków"
         }
         
         title_text = game_titles.get(self.game_name, "Minigra")

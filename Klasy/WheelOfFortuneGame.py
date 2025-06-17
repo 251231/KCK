@@ -39,10 +39,10 @@ class WheelOfFortuneGame:
     def _init_fonts(self):
         """Inicjalizuje wszystkie czcionki"""
         self.fonts = {
-            'small': pygame.font.Font(None, 24),
-            'normal': pygame.font.Font(None, 32),
-            'large': pygame.font.Font(None, 42),
-            'title': pygame.font.Font(None, 56)
+            'small': pygame.font.Font('assets/Czcionka.ttf', 24),
+            'normal': pygame.font.Font('assets/Czcionka.ttf', 32),
+            'large': pygame.font.Font('assets/Czcionka.ttf', 42),
+            'title': pygame.font.Font('assets/Czcionka.ttf', 56)
         }
 
     def _init_positions(self):
@@ -95,20 +95,29 @@ class WheelOfFortuneGame:
     def _init_colors(self):
         """Inicjalizuje paletę kolorów"""
         self.colors = {
-            'bg_start': (20, 20, 40),
-            'bg_end': (40, 40, 80),
+            'bg_start': (25, 25, 50),
+            'bg_end': (60, 60, 120),
+            'bg_accent': (100, 100, 200),
             'gold': (255, 215, 0),
-            'gold_light': (255, 235, 50),
-            'green': (50, 180, 50),
-            'green_light': (80, 210, 80),
-            'red': (180, 50, 50),
-            'red_light': (210, 80, 80),
-            'panel_bg': (30, 30, 60),
-            'panel_border': (70, 70, 110),
+            'gold_light': (255, 235, 100),
+            'gold_dark': (218, 165, 32),
+            'green': (76, 175, 80),
+            'green_light': (129, 199, 132),
+            'green_dark': (56, 142, 60),
+            'red': (244, 67, 54),
+            'red_light': (239, 154, 154),
+            'red_dark': (198, 40, 40),
+            'panel_bg': (40, 40, 80),
+            'panel_bg_light': (60, 60, 100),
+            'panel_border': (100, 100, 180),
+            'panel_border_bright': (150, 150, 255),
             'text_white': (255, 255, 255),
-            'text_dark': (50, 50, 50),
-            'shadow': (10, 10, 10),
-            'wheel_border': (100, 100, 100)
+            'text_light': (240, 240, 240),
+            'text_dark': (40, 40, 40),
+            'shadow': (0, 0, 0),
+            'wheel_border': (220, 220, 220),
+            'wheel_center': (200, 200, 200),
+            'glow': (255, 255, 100)
         }
 
     def _check_daily_availability(self):
@@ -179,15 +188,26 @@ class WheelOfFortuneGame:
             self._draw_result()
 
     def _draw_background(self):
-        """Rysuje tło z gradientem"""
+        """Rysuje ulepszone tło z gradientem i wzorami"""
+        # Główny gradient
         for y in range(SCREEN_HEIGHT):
-            color_intensity = int((y / SCREEN_HEIGHT) * 40)
-            color = (
-                self.colors['bg_start'][0] + color_intensity,
-                self.colors['bg_start'][1] + color_intensity,
-                self.colors['bg_start'][2] + color_intensity
-            )
-            pygame.draw.line(screen, color, (0, y), (SCREEN_WIDTH, y))
+            progress = y / SCREEN_HEIGHT
+            color_r = int(self.colors['bg_start'][0] + (self.colors['bg_end'][0] - self.colors['bg_start'][0]) * progress)
+            color_g = int(self.colors['bg_start'][1] + (self.colors['bg_end'][1] - self.colors['bg_start'][1]) * progress)
+            color_b = int(self.colors['bg_start'][2] + (self.colors['bg_end'][2] - self.colors['bg_start'][2]) * progress)
+            
+            pygame.draw.line(screen, (color_r, color_g, color_b), (0, y), (SCREEN_WIDTH, y))
+        
+        # Delikatne wzory w tle
+        current_time = pygame.time.get_ticks()
+        for i in range(0, SCREEN_WIDTH, 100):
+            for j in range(0, SCREEN_HEIGHT, 100):
+                alpha = int(20 + 10 * math.sin(current_time * 0.001 + i * 0.01 + j * 0.01))
+                size = int(30 + 10 * math.cos(current_time * 0.002 + i * 0.005))
+                if size > 0:
+                    glow_surface = pygame.Surface((size * 2, size * 2), pygame.SRCALPHA)
+                    pygame.draw.circle(glow_surface, (*self.colors['bg_accent'], alpha), (size, size), size)
+                    screen.blit(glow_surface, (i - size, j - size))
 
     def _draw_title(self):
         """Rysuje tytuł gry"""
@@ -203,75 +223,94 @@ class WheelOfFortuneGame:
     def _draw_wheel(self):
         """Rysuje koło fortuny"""
         center_x, center_y = self.wheel_center
-        current_time = pygame.time.get_ticks()
         
-        # Aktualizuj animację kręcenia
         if self.animation['spinning']:
+            current_time = pygame.time.get_ticks()
             self._update_spin_animation(current_time)
         
         # Rysuj segmenty koła
         for i, prize in enumerate(self.prizes):
-            start_angle = (i * self.segment_angle + self.animation['angle']) % 360
-            end_angle = ((i + 1) * self.segment_angle + self.animation['angle']) % 360
+            start_angle = math.radians(i * self.segment_angle + self.animation['angle'])
+            end_angle = math.radians((i + 1) * self.segment_angle + self.animation['angle'])
             
             self._draw_wheel_segment(center_x, center_y, start_angle, end_angle, prize, i)
         
         # Rysuj obramowanie koła
         pygame.draw.circle(screen, self.colors['wheel_border'], 
-                          (center_x, center_y), self.wheel_radius + 3, 3)
+                        (center_x, center_y), self.wheel_radius + 3, 3)
 
     def _draw_wheel_segment(self, center_x, center_y, start_angle, end_angle, prize, segment_index):
         """Rysuje pojedynczy segment koła"""
-        # Konwersja na radiany
-        start_rad = math.radians(start_angle)
-        end_rad = math.radians(end_angle)
-        mid_rad = math.radians((start_angle + end_angle) / 2)
+        mid_angle = (start_angle + end_angle) / 2
         
         # Tworzenie punktów segmentu
         points = [(center_x, center_y)]
         
         # Dodaj punkty na obwodzie
-        for angle in range(int(start_angle), int(end_angle) + 1, 2):
-            rad = math.radians(angle)
-            x = center_x + self.wheel_radius * math.cos(rad)
-            y = center_y + self.wheel_radius * math.sin(rad)
+        num_points = max(8, int(abs(end_angle - start_angle) * 180 / math.pi))
+        for i in range(num_points + 1):
+            angle = start_angle + (end_angle - start_angle) * i / num_points
+            x = center_x + self.wheel_radius * math.cos(angle)
+            y = center_y + self.wheel_radius * math.sin(angle)
             points.append((x, y))
         
-        points.append((center_x, center_y))
-        
         # Rysuj segment
-        if len(points) > 2:
-            pygame.draw.polygon(screen, prize["color"], points)
-            pygame.draw.polygon(screen, self.colors['wheel_border'], points, 2)
+        pygame.draw.polygon(screen, prize["color"], points)
+        pygame.draw.polygon(screen, self.colors['wheel_border'], points, 2)
         
-        # Rysuj tekst nagrody
-        text_x = center_x + (self.wheel_radius * 0.7) * math.cos(mid_rad)
-        text_y = center_y + (self.wheel_radius * 0.7) * math.sin(mid_rad)
+        # Rysuj tekst nagrody - zawsze widoczny
+        text_radius = self.wheel_radius * 0.65
+        text_x = center_x + text_radius * math.cos(mid_angle)
+        text_y = center_y + text_radius * math.sin(mid_angle)
         
-        text = self.fonts['small'].render(str(prize["coins"]), True, self.colors['text_white'])
-        text_rect = text.get_rect(center=(text_x, text_y))
-        screen.blit(text, text_rect)
+        # Tekst z cieniem dla lepszej czytelności
+        text_str = str(prize["coins"])
+        text_shadow = self.fonts['normal'].render(text_str, True, (0, 0, 0))
+        text_main = self.fonts['normal'].render(text_str, True, (255, 255, 255))
+        
+        text_rect = text_main.get_rect(center=(text_x, text_y))
+        shadow_rect = text_shadow.get_rect(center=(text_x + 1, text_y + 1))
+        
+        screen.blit(text_shadow, shadow_rect)
+        screen.blit(text_main, text_rect)
+
 
     def _draw_pointer(self):
-        """Rysuje strzałkę z lekkim shake na końcu"""
+        """Rysuje elegancką strzałkę wskazującą na górę koła"""
         center_x, center_y = self.wheel_center
+        pointer_length = 25
+        
+        # Pozycja wskazówki (dokładnie na górze koła)
         pointer_x = center_x
-        pointer_y = center_y - self.wheel_radius - 15
-
-        # Lekka wibracja gdy animacja się kończy
-        if self.animation['spinning']:
-            shake = random.randint(-1, 1)
-        else:
-            shake = 0
-
-        arrow_points = [
-            (pointer_x, pointer_y + shake),
-            (pointer_x - 15, pointer_y - 20 + shake),
-            (pointer_x + 15, pointer_y - 20 + shake)
+        pointer_y = center_y - self.wheel_radius - pointer_length
+        
+        # Efekt trzęsienia pod koniec kręcenia
+        if (self.animation['spinning'] and 
+            pygame.time.get_ticks() > self.animation['spin_start_time'] + self.animation['spin_duration'] - 500):
+            shake = random.randint(-2, 2)
+            pointer_x += shake
+        
+        # Rysuj trójkątną strzałkę wskazującą w dół (na koło)
+        pointer_points = [
+            (pointer_x, pointer_y + pointer_length),  # Wierzchołek strzałki (wskazujący na koło)
+            (pointer_x - 18, pointer_y - 5),          # Lewy róg podstawy
+            (pointer_x + 18, pointer_y - 5)           # Prawy róg podstawy
         ]
+        
+        # Cień strzałki
+        shadow_points = [(x + 2, y + 2) for x, y in pointer_points]
+        pygame.draw.polygon(screen, self.colors['shadow'], shadow_points)
+        
+        # Główna strzałka
+        pygame.draw.polygon(screen, self.colors['gold'], pointer_points)
+        
+        # Obramowanie
+        pygame.draw.polygon(screen, self.colors['gold_dark'], pointer_points, 3)
+        
+        # Środkowy punkt mocowania
+        pygame.draw.circle(screen, self.colors['gold_dark'], (pointer_x, pointer_y + pointer_length), 8)
+        pygame.draw.circle(screen, self.colors['gold'], (pointer_x, pointer_y + pointer_length), 6)
 
-        pygame.draw.polygon(screen, self.colors['gold'], arrow_points)
-        pygame.draw.polygon(screen, self.colors['wheel_border'], arrow_points, 2)
 
 
     def _draw_instructions(self):
@@ -283,11 +322,10 @@ class WheelOfFortuneGame:
         screen.blit(title, (60, SCREEN_HEIGHT - 150))
         
         instructions = [
-            "• Kliknij KRĘĆ KOŁEM",
-            "• Wylosuj nagrodę!",
-            "• Można grać raz dziennie",
-            "• Nagrody: 1-100 monet",
-            "• Szczęśliwego kręcenia!"
+            "Kliknij KRĘĆ KOŁEM",
+            "Można grać raz dziennie",
+            "Nagrody: 1-100 monet",
+            "Szczęśliwego kręcenia!"
         ]
         
         for i, instruction in enumerate(instructions):
@@ -396,7 +434,7 @@ class WheelOfFortuneGame:
         """Rysuje przyciski"""
         # Przycisk kręcenia
         if self.can_play_today and self.game_state in ["waiting", "finished"]:
-            button_text = "KRĘĆ KOŁEM" if self.game_state == "waiting" else "KRĘĆ PONOWNIE"
+            button_text = "KRĘĆ KOŁEM"
             can_spin = self.game_state == "waiting" or self.game_state == "finished"
             
             if can_spin:
@@ -423,8 +461,8 @@ class WheelOfFortuneGame:
         screen.blit(exit_text, exit_rect)
 
     def _draw_result(self):
-        """Rysuje panel z wynikiem"""
-        result_rect = pygame.Rect(SCREEN_WIDTH//2 - 250, SCREEN_HEIGHT//2 + 130, 500, 80)
+        """Rysuje panel z wynikiem niżej na ekranie"""
+        result_rect = pygame.Rect(SCREEN_WIDTH//2 - 250, SCREEN_HEIGHT//2 + 280, 500, 80)  # Przesunięte niżej
         
         # Różne kolory w zależności od wygranej
         if "JACKPOT" in self.result:
@@ -455,56 +493,62 @@ class WheelOfFortuneGame:
                            (rect.x + rect.width, rect.y + y))
 
     def _update_spin_animation(self, current_time):
-        """Zaawansowana animacja ease-out quint + bounce"""
+        """Animacja obrotu z precyzyjnym zatrzymaniem"""
         elapsed = current_time - self.animation['spin_start_time']
         duration = self.animation['spin_duration']
 
         if elapsed < duration:
+            # Ease-out dla płynnego zwalniania
             t = elapsed / duration
-            # Ease-out quint: mega smooth
-            eased = 1 - pow(1 - t, 5)
-            current_angle = eased * self.animation['final_angle']
-            self.animation['angle'] = current_angle % 360
-
-            # Bounce na końcu
-            if t > 0.95:
-                bounce = math.sin((t - 0.95) * 40) * (1 - t) * 8
+            eased = 1 - (1 - t) ** 3
+            self.animation['angle'] = eased * self.animation['final_angle']
+            
+            # Lekkie drganie na końcu
+            if t > 0.85:
+                bounce_intensity = (1 - t) * 3
+                bounce = math.sin((t - 0.85) * 40) * bounce_intensity
                 self.animation['angle'] += bounce
-
         else:
             self.animation['spinning'] = False
-            self.animation['angle'] = self.animation['final_angle'] % 360
+            self.animation['angle'] = self.animation['final_angle']
             self._finish_spin()
 
 
     def _finish_spin(self):
-        """Kończy kręcenie i określa nagrodę"""
-        # Oblicz który segment został wybrany
-        # Odwróć kąt bo wskazówka jest na górze
-        pointer_angle = (360 - self.animation['angle']) % 360
-        selected_prize = self.animation['selected_prize']
-
+        """Określa nagrodę z precyzyjnym wskazaniem"""
+        # Kąt gdzie wskazuje pointer (góra = -π/2 radianów = 270°)
+        pointer_direction = -math.pi / 2
         
-        # Dodaj monety graczowi
+        # Normalizuj kąt koła do zakresu 0-2π
+        wheel_angle = math.radians(self.animation['angle']) % (2 * math.pi)
+        
+        # Oblicz rzeczywisty kąt segmentu względem pointera
+        relative_angle = (pointer_direction - wheel_angle) % (2 * math.pi)
+        
+        # Przelicz na stopnie dla łatwiejszego debugowania
+        relative_degrees = math.degrees(relative_angle)
+        
+        # Znajdź segment
+        segment_index = int(relative_degrees / self.segment_angle) % self.num_segments
+        selected_prize = self.prizes[segment_index]
+        
+        # Dodaj monety
         self.player.coins += selected_prize["coins"]
-        
-        # Zapisz że gracz już dziś grał
         self._save_daily_play()
-
         
-        # Ustaw wynik
+        # Ustaw komunikat
         if selected_prize["coins"] == 100:
-            self.result = f"🎉 JACKPOT! +{selected_prize['coins']} monet! 🎉"
+            self.result = f"JACKPOT! +{selected_prize['coins']} monet!"
         elif selected_prize["coins"] >= 50:
-            self.result = f"🎊 SUPER! +{selected_prize['coins']} monet! 🎊"
+            self.result = f"SUPER! +{selected_prize['coins']} monet!"
         else:
             self.result = f"Wygrana: +{selected_prize['coins']} monet!"
         
         self.game_state = "finished"
         
-        # Zapisz dane gracza
         if hasattr(self.player, 'save_data'):
             self.player.save_data()
+        
 
     def handle_event(self, event):
         """Obsługuje wydarzenia"""
@@ -527,22 +571,28 @@ class WheelOfFortuneGame:
             self.start_spin()
 
     def start_spin(self):
-        """Rozpoczyna mega animację kręcenia"""
+        """Rozpoczyna obrót z precyzyjnym targetowaniem"""
         self.game_state = "spinning"
         self.result = ""
 
-        selected_segment = random.randint(0, self.num_segments - 1)
-        self.animation['selected_prize'] = self.prizes[selected_segment]
+        # Wybierz losowy segment
+        target_segment = random.randint(0, self.num_segments - 1)
+        self.animation['selected_prize'] = self.prizes[target_segment]
 
-        # Oblicz kąt zatrzymania (strzałka wskazuje środek segmentu)
-        target_angle = (360 - (selected_segment * self.segment_angle + self.segment_angle / 2)) % 360
-        total_spins = random.randint(6, 9)  # więcej pełnych obrotów
-        self.animation['final_angle'] = target_angle + 360 * total_spins
+        # Oblicz kąt środka segmentu
+        segment_center_degrees = target_segment * self.segment_angle + self.segment_angle / 2
+        
+        # Pointer wskazuje na górę (-90°), więc oblicz ile trzeba obrócić koło
+        # żeby środek segmentu znalazł się pod pointerem
+        target_angle = (270 - segment_center_degrees) % 360
+        
+        # Dodaj pełne obroty dla efektu wizualnego
+        full_rotations = random.randint(8, 12)
+        self.animation['final_angle'] = target_angle + 360 * full_rotations
 
         self.animation['spinning'] = True
         self.animation['spin_start_time'] = pygame.time.get_ticks()
-        self.animation['spin_duration'] = 4500  # dłużej: 4.5 sekundy
-        self.animation['spin_speed'] = 0  # nie używane – sterujemy easingiem
+        self.animation['spin_duration'] = 4000 + random.randint(0, 1000)
 
 
     def reset_game(self):

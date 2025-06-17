@@ -343,8 +343,6 @@ class Game:
             self.interaction_hint = "Naciśnij SPACJĘ, aby porozmawiać"
         elif self.player.rect.colliderect(self.wheel_rect.inflate(100, 100))and self.get_current_room_name() == "GameRoom":
             self.interaction_hint = "Naciśnij SPACJĘ, aby zakręcić kołem"
-        elif isinstance(self.current_room, FeeRoom) and self.current_room.check_fee_interaction(self.player):
-            self.interaction_hint = "Naciśnij SPACJĘ, aby wypłacić monety"
         elif self.player.rect.colliderect(self.beetle_table_rect.inflate(100, 100)) and self.get_current_room_name() == "GameRoom":
             self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w beetle"
         else:
@@ -436,17 +434,19 @@ class Game:
                 self.draw_pause_menu()
             pygame.display.flip()
             return
-        elif self.in_beetle_game:
+        elif self.in_beetle_game and self.get_current_room_name() == "GameRoom":
             self.beetle_game.draw()
             if self.paused:
                 self.draw_pause_menu()
             pygame.display.flip()
             return
+        
         if hasattr(self.player, 'speed_boost_timer') and self.player.speed_boost_timer > 0:
             boost_seconds = int(self.player.speed_boost_timer / 1000)
             font = pygame.font.Font(None, 32)
             boost_text = font.render(f"Boost kawy: {boost_seconds}s", True, GREEN)
             screen.blit(boost_text, (10, 50))
+
         # Jeśli jakiś NPC ma aktywne okno czatu, rysuj tylko okno czatu
         for npc in self.current_room.npcs:
             if npc.chat_window.active:
@@ -989,14 +989,14 @@ class Game:
                     # Sprawdź czy gracz jest przy stole z kubkami
                     elif self.player.rect.colliderect(self.cups_table_rect.inflate(100, 100)):
                         self.start_minigame_with_loader("cups")
-                        
+                    elif self.player.rect.colliderect(self.beetle_table_rect.inflate(100, 100)):
+                        self.start_minigame_with_loader("beetles")    
                     elif (
                         self.get_current_room_name() == "GameRoom" and 
                         self.player.rect.colliderect(self.wheel_rect.inflate(100, 100))
                     ):
                         self.start_minigame_with_loader("wheel")
-                    elif self.player.rect.colliderect(self.beetle_table_rect.inflate(100, 100)):
-                        self.start_minigame_with_loader("beetle")    
+                      
                     if isinstance(self.current_room, MainRoom) and self.player_near_coffee_machine:
                         if hasattr(self.current_room, 'coffee_machine'):
                             success = self.current_room.coffee_machine.try_buy_coffee(self.player)
@@ -1029,7 +1029,7 @@ class Game:
             elif game_type == "wheel":
                 self.in_wheel_game = True
                 self.wheel_game.reset_game()
-            elif game_type == "beetle":
+            elif game_type == "beetles":
                 self.in_beetle_game = True
                 self.beetle_game.reset_game()
 
