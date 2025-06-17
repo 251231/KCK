@@ -17,15 +17,12 @@ from DiceGame import DiceGame
 from CupsGame import CupsGame
 from WheelOfFortuneGame import WheelOfFortuneGame
 from MiniGameLoader import MiniGameLoader
-
 from PsychologistRoom import PsychologistRoom
-
-
 from AnimatedModels import AnimatedLamp
-
 from Authors import Authors 
-
 from CoffeeMachine import CoffeeMachine
+from Beetle import *
+
 
 class Game:
     def __init__(self, username, music_manager=None):
@@ -47,6 +44,10 @@ class Game:
         self.teleport_cooldown = 0
 
         # Minigry
+        self.beetle_game = BeetleRaceGame(self.player)
+        self.in_beetle_game = False
+        self.beetle_table_rect = pygame.Rect(787, 400, 60, 60)
+
         self.dice_game = DiceGame(self.player)
         self.in_dice_game = False
         self.cups_game = CupsGame(self.player)
@@ -55,9 +56,9 @@ class Game:
         self.in_wheel_game = False
 
         
-        self.automat_rect = pygame.Rect(786, 407, 50, 50)
+        self.automat_rect = pygame.Rect(369, 433, 50, 50)
         self.cups_table_rect = pygame.Rect(1207, 408, 60, 60)
-        self.wheel_rect = pygame.Rect(369, 433, 60, 60)
+        self.wheel_rect = pygame.Rect(880, 960, 60, 60)
         self.interaction_hint = None
 
         # Menu pauzy
@@ -256,7 +257,7 @@ class Game:
     def is_in_any_interaction(self):
         """Sprawdza czy gracz jest w jakiejkolwiek interakcji (minigra, rozmowa z NPC, lub wpłaty)"""
         # Sprawdź minigry
-        if self.in_dice_game or self.in_cups_game or self.in_wheel_game :
+        if self.in_dice_game or self.in_cups_game or self.in_wheel_game or self.in_beetle_game:
             return True
         
         # Sprawdź czy jakiś NPC ma aktywne okno czatu
@@ -293,7 +294,8 @@ class Game:
             return
     # DODANE: Aktualizuj animację menu również gdy gra nie jest spauzowana
         self.update_menu_animation(delta_time)
-            
+        if self.in_beetle_game:
+            self.beetle_game.update(delta_time)
         # Jeśli jesteśmy w interakcji, nie aktualizuj gry głównej
         if self.is_in_any_interaction():
             # Aktualizuj tylko FeeRoom jeśli jego interfejs jest aktywny
@@ -343,6 +345,8 @@ class Game:
             self.interaction_hint = "Naciśnij SPACJĘ, aby zakręcić kołem"
         elif isinstance(self.current_room, FeeRoom) and self.current_room.check_fee_interaction(self.player):
             self.interaction_hint = "Naciśnij SPACJĘ, aby wypłacić monety"
+        elif self.player.rect.colliderect(self.beetle_table_rect.inflate(100, 100)) and self.get_current_room_name() == "GameRoom":
+            self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w beetle"
         else:
             self.interaction_hint = None
         
@@ -426,8 +430,14 @@ class Game:
                 self.draw_pause_menu()
             pygame.display.flip()
             return
-        if self.in_wheel_game and self.get_current_room_name() == "GameRoom":
+        elif self.in_wheel_game and self.get_current_room_name() == "GameRoom":
             self.wheel_game.draw()
+            if self.paused:
+                self.draw_pause_menu()
+            pygame.display.flip()
+            return
+        elif self.in_beetle_game:
+            self.beetle_game.draw()
             if self.paused:
                 self.draw_pause_menu()
             pygame.display.flip()
@@ -948,7 +958,11 @@ class Game:
                 if not self.wheel_game.in_game:
                     self.in_wheel_game = False
                 continue
-
+            elif self.in_beetle_game:
+                self.beetle_game.handle_event(event)
+                if not self.beetle_game.in_game:
+                    self.in_beetle_game = False
+                continue
             # Sprawdź czy jakiś NPC ma aktywne okno czatu
             any_npc_handled = False
             for npc in self.current_room.npcs:
@@ -981,6 +995,8 @@ class Game:
                         self.player.rect.colliderect(self.wheel_rect.inflate(100, 100))
                     ):
                         self.start_minigame_with_loader("wheel")
+                    elif self.player.rect.colliderect(self.beetle_table_rect.inflate(100, 100)):
+                        self.start_minigame_with_loader("beetle")    
                     if isinstance(self.current_room, MainRoom) and self.player_near_coffee_machine:
                         if hasattr(self.current_room, 'coffee_machine'):
                             success = self.current_room.coffee_machine.try_buy_coffee(self.player)
@@ -1013,6 +1029,9 @@ class Game:
             elif game_type == "wheel":
                 self.in_wheel_game = True
                 self.wheel_game.reset_game()
+            elif game_type == "beetle":
+                self.in_beetle_game = True
+                self.beetle_game.reset_game()
 
     def handle_coffee_machine_interaction(self):
         """Obsługuje interakcje z automatem kawy w MainRoom"""
