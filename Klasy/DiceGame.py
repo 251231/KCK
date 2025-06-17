@@ -60,13 +60,24 @@ class DiceGame:
         self.dice_change_interval = 100  # Zmiana co 100ms podczas animacji
 
     def draw(self):
-        # Tło gry z gradientem
-        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        for y in range(SCREEN_HEIGHT):
-            color_intensity = int(45 + (y / SCREEN_HEIGHT) * 25)
-            pygame.draw.line(overlay, (color_intensity, color_intensity, color_intensity + 15), (0, y), (SCREEN_WIDTH, y))
-        overlay.set_alpha(240)
-        screen.blit(overlay, (0, 0))
+        # Próbuj załadować własne tło
+        try:
+            if not hasattr(self, 'custom_background'):
+                # Ładuj tło tylko raz i zachowaj w pamięci
+                background_img = pygame.image.load("assets/kosci.png")
+                self.custom_background = pygame.transform.scale(background_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+            
+            # Użyj własnego tła
+            screen.blit(self.custom_background, (0, 0))
+            
+        except (pygame.error, FileNotFoundError):
+            # Fallback - domyślne tło z gradientem jeśli nie ma pliku kosci.png
+            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            for y in range(SCREEN_HEIGHT):
+                color_intensity = int(45 + (y / SCREEN_HEIGHT) * 25)
+                pygame.draw.line(overlay, (color_intensity, color_intensity, color_intensity + 15), (0, y), (SCREEN_WIDTH, y))
+            overlay.set_alpha(240)
+            screen.blit(overlay, (0, 0))
         
         # Tytuł gry z cieniem - lepsze pozycjonowanie
         title_shadow = self.title_font.render("GRA W KOŚCI", True, (20, 20, 20))

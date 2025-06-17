@@ -17,7 +17,20 @@ from DiceGame import DiceGame
 from CupsGame import CupsGame
 from WheelOfFortuneGame import WheelOfFortuneGame
 from MiniGameLoader import MiniGameLoader
+
 from Beetle import *
+
+
+from PsychologistRoom import PsychologistRoom
+
+
+from AnimatedModels import AnimatedLamp
+
+from Authors import Authors 
+
+from CoffeeMachine import CoffeeMachine
+
+
 class Game:
     def __init__(self, username, music_manager=None):
         self.running = True
@@ -44,17 +57,23 @@ class Game:
         self.in_cups_game = False
         self.wheel_game = WheelOfFortuneGame(self.player)
         self.in_wheel_game = False
+
         self.beetle_game = BeetleRaceGame(self.player)
         self.in_beetle_game = False
         self.beetle_table_rect = pygame.Rect(400, 600, 60, 60)
         self.automat_rect = pygame.Rect(1000, 700, 50, 50)
         self.cups_table_rect = pygame.Rect(800, 600, 60, 60)
         self.wheel_rect = pygame.Rect(600, 600, 60, 60)
+
         self.interaction_hint = None
 
         # Menu pauzy
         self.paused = False
         self.pause_menu_tab = "main"
+        self.menu_scale = 0.0  # Skala menu (0.0 = niewidoczne, 1.0 = pełny rozmiar)
+        self.menu_alpha = 0    # Przezroczystość menu (0-255)
+        self.menu_target_scale = 0.0  # Docelowa skala
+        self.menu_target_alpha = 0 
         
         # Ustaw początkową głośność na podstawie MusicManager
         if self.music_manager:
@@ -68,6 +87,7 @@ class Game:
         
         self.init_pause_menu()
         self.init_rpg_fonts()
+        self.player_near_coffee_machine = False
 
     def init_rpg_fonts(self):
         """Inicjalizuje czcionki w stylu RPG"""
@@ -151,9 +171,10 @@ class Game:
             pygame.draw.rect(surface, (160, 130, 80), corner_rect)
             pygame.draw.rect(surface, (101, 67, 33), corner_rect, 2)
 
-    def draw_rpg_button(self, surface, rect, text, is_selected=False, is_hovered=False, color_theme="blue"):
-        """Rysuje przycisk w stylu RPG"""
-        # Kolory dla różnych motywów
+    def draw_rpg_button_animated(self, surface, rect, text, is_selected=False, is_hovered=False, 
+                           color_theme="blue", scale_factor=1.0):
+        """Rysuje przycisk w stylu RPG z animacją"""
+        # ... (kod kolorów bez zmian)
         color_themes = {
             "blue": {
                 "bg": (30, 60, 120) if not (is_selected or is_hovered) else (50, 90, 180),
@@ -176,36 +197,51 @@ class Game:
             "yellow": {
                 "bg": (100, 80, 20) if not (is_selected or is_hovered) else (140, 120, 40),
                 "border": (200, 180, 80),
-                "text": (255, 255, 255),  
+                "text": (255, 255, 255),
                 "selected_glow": (255, 240, 150)
             }
         }
-        
+    
         theme = color_themes.get(color_theme, color_themes["blue"])
-        
+    
+        # Stwórz powierzchnię przycisku z przezroczystością
+        button_surface = pygame.Surface((rect.width, rect.height))
+        button_surface.set_alpha(int(self.menu_alpha))
+    
         # Efekt świecenia dla wybranego przycisku
         if is_selected:
-            glow_rect = rect.inflate(20, 20)
+            glow_size = max(10, int(20 * scale_factor))
+            glow_rect = pygame.Rect(0, 0, rect.width + glow_size, rect.height + glow_size)
             glow_surface = pygame.Surface((glow_rect.width, glow_rect.height))
-            glow_surface.set_alpha(100)
+            glow_surface.set_alpha(int(100 * (self.menu_alpha / 255)))
             glow_surface.fill(theme["selected_glow"])
-            surface.blit(glow_surface, glow_rect.topleft)
-        
+            surface.blit(glow_surface, (rect.x - glow_size//2, rect.y - glow_size//2))
+    
         # Główny przycisk
-        pygame.draw.rect(surface, theme["bg"], rect)
-        
+        pygame.draw.rect(button_surface, theme["bg"], (0, 0, rect.width, rect.height))
+    
         # Ramka przycisku
-        border_thickness = 4 if is_selected else 3
-        pygame.draw.rect(surface, theme["border"], rect, border_thickness)
-        
+        border_thickness = max(1, int((4 if is_selected else 3) * scale_factor))
+        pygame.draw.rect(button_surface, theme["border"], (0, 0, rect.width, rect.height), border_thickness)
+    
         # Wewnętrzna ramka dla głębi
-        inner_rect = rect.inflate(-8, -8)
-        pygame.draw.rect(surface, theme["border"], inner_rect, 1)
-        
-        # Tekst
-        text_surface = self.rpg_font_medium.render(text, True, theme["text"])
-        text_rect = text_surface.get_rect(center=rect.center)
-        surface.blit(text_surface, text_rect)
+        if scale_factor > 0.5:
+            inner_rect = pygame.Rect(4, 4, rect.width - 8, rect.height - 8)
+            pygame.draw.rect(button_surface, theme["border"], inner_rect, 1)
+    
+        # Tekst z przeskalowaną czcionką
+        font_size = max(12, int(32 * scale_factor))
+        try:
+            scaled_font = pygame.font.Font("assets/Czcionka.ttf", font_size)
+        except:
+            scaled_font = pygame.font.Font(None, font_size)
+    
+        text_surface = scaled_font.render(text, True, theme["text"])
+        text_rect = text_surface.get_rect(center=(rect.width//2, rect.height//2))
+        button_surface.blit(text_surface, text_rect)
+    
+        # Narysuj przycisk na głównej powierzchni
+        surface.blit(button_surface, rect.topleft)
 
     def update_volume_handle(self):
         """Aktualizuje pozycję suwaka głośności"""
@@ -219,13 +255,17 @@ class Game:
             "GameRoom": GameRoom(),
             "RegisterRoom": RegisterRoom(),
             "FeeRoom": FeeRoom(),
-            "DataRoom": DataRoom()
+            "DataRoom": DataRoom(),
+            "PsychologistRoom": PsychologistRoom(),
+            "Authors":Authors()
         }
 
     def is_in_any_interaction(self):
         """Sprawdza czy gracz jest w jakiejkolwiek interakcji (minigra, rozmowa z NPC, lub wpłaty)"""
         # Sprawdź minigry
+
         if self.in_dice_game or self.in_cups_game or self.in_wheel_game or self.in_beetle_game:
+
             return True
         
         # Sprawdź czy jakiś NPC ma aktywne okno czatu
@@ -238,11 +278,30 @@ class Game:
             return True
         
         return False
+    def update_menu_animation(self, delta_time):
+        """Aktualizuje animację menu pauzy"""
+        animation_speed = 8.0  # Szybkość animacji (wyższe = szybsze)
+    
+    # Płynne przejście skali
+        if abs(self.menu_scale - self.menu_target_scale) > 0.01:
+            self.menu_scale += (self.menu_target_scale - self.menu_scale) * animation_speed * delta_time
+        else:
+            self.menu_scale = self.menu_target_scale
+    
+    # Płynne przejście przezroczystości
+        if abs(self.menu_alpha - self.menu_target_alpha) > 1:
+            self.menu_alpha += (self.menu_target_alpha - self.menu_alpha) * animation_speed * delta_time
+        else:
+         self.menu_alpha = self.menu_target_alpha
 
     def update(self, dx, dy, delta_time):
         # Jeśli gra jest spauzowana, nie aktualizuj gry głównej
         if self.paused:
+        # DODANE: Aktualizuj animację menu
+            self.update_menu_animation(delta_time)
             return
+    # DODANE: Aktualizuj animację menu również gdy gra nie jest spauzowana
+        self.update_menu_animation(delta_time)
             
         if self.in_beetle_game:
             self.beetle_game.update(delta_time)
@@ -265,7 +324,13 @@ class Game:
             npc.update()
         # Aktualizuj kamerę
         self.update_camera()
-        
+        if hasattr(self.current_room, 'update'):
+            self.current_room.update(self, delta_time)
+                
+        if isinstance(self.current_room, MainRoom):
+            self.handle_coffee_machine_interaction()
+        if isinstance(self.current_room, MainRoom) and hasattr(self.current_room, 'coffee_machine'):
+            self.current_room.coffee_machine.update_player_speed_boost(self.player, delta_time)
         # Sprawdź teleportację (tylko jeśli cooldown minął)
         if self.teleport_cooldown <= 0:
             self.check_room_transitions()
@@ -275,13 +340,17 @@ class Game:
         
     def update_interaction_hints(self):
         """Aktualizuje podpowiedzi interakcji"""
-        if self.player.rect.colliderect(self.automat_rect.inflate(100, 100)):
+        
+        if self.get_current_room_name() == "DataRoom" or self.get_current_room_name() == "RegisterRoom":
+            return
+
+        if self.player.rect.colliderect(self.automat_rect.inflate(100, 100)) and self.get_current_room_name() == "GameRoom":
             self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w kości"
-        elif self.player.rect.colliderect(self.cups_table_rect.inflate(100, 100)):
+        elif self.player.rect.colliderect(self.cups_table_rect.inflate(100, 100)) and self.get_current_room_name() == "GameRoom":
             self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w kubki"
-        elif any(self.player.rect.colliderect(npc.rect.inflate(100, 100)) for npc in self.current_room.npcs):
+        elif any(self.player.rect.colliderect(npc.rect.inflate(100, 100)) for npc in self.current_room.npcs) :
             self.interaction_hint = "Naciśnij SPACJĘ, aby porozmawiać"
-        elif self.player.rect.colliderect(self.wheel_rect.inflate(100, 100)):
+        elif self.player.rect.colliderect(self.wheel_rect.inflate(100, 100))and self.get_current_room_name() == "GameRoom":
             self.interaction_hint = "Naciśnij SPACJĘ, aby zakręcić kołem"
         elif isinstance(self.current_room, FeeRoom) and self.current_room.check_fee_interaction(self.player):
             self.interaction_hint = "Naciśnij SPACJĘ, aby wypłacić monety"
@@ -313,7 +382,6 @@ class Game:
     def change_room(self, room_name, entry_point="default"):
         """Zmienia pokój i ustawia gracza w odpowiednim miejscu"""
         if room_name in self.rooms:
-            print(f"Zmieniam pokój na: {room_name}, punkt wejścia: {entry_point}")
             
             # Zmień pokój
             self.current_room = self.rooms[room_name]
@@ -359,13 +427,13 @@ class Game:
         screen.fill(BLACK)
         
         # Jeśli jesteśmy w minigre, rysuj tylko minigrę
-        if self.in_dice_game:
+        if self.in_dice_game and self.get_current_room_name() == "GameRoom":
             self.dice_game.draw()
             if self.paused:
                 self.draw_pause_menu()
             pygame.display.flip()
             return
-        elif self.in_cups_game:
+        elif self.in_cups_game and self.get_current_room_name() == "GameRoom":
             self.cups_game.draw()
             if self.paused:
                 self.draw_pause_menu()
@@ -377,6 +445,7 @@ class Game:
                 self.draw_pause_menu()
             pygame.display.flip()
             return
+
         elif self.in_beetle_game:
             self.beetle_game.draw()
             if self.paused:
@@ -384,6 +453,13 @@ class Game:
             pygame.display.flip()
             return
   
+
+        if hasattr(self.player, 'speed_boost_timer') and self.player.speed_boost_timer > 0:
+            boost_seconds = int(self.player.speed_boost_timer / 1000)
+            font = pygame.font.Font(None, 32)
+            boost_text = font.render(f"Boost kawy: {boost_seconds}s", True, GREEN)
+            screen.blit(boost_text, (10, 50))
+
         # Jeśli jakiś NPC ma aktywne okno czatu, rysuj tylko okno czatu
         for npc in self.current_room.npcs:
             if npc.chat_window.active:
@@ -415,18 +491,29 @@ class Game:
         """Rysuje główną grę (pokój, gracza, UI itp.)"""
         # Rysuj tło pokoju
         self.current_room.draw(screen, self.camera_x, self.camera_y)
-        
-        self.player.draw(self.camera_x, self.camera_y)
-        self.ui.draw()
+
+        if not isinstance(self.current_room, Authors):
+            if not (
+                (hasattr(self.current_room, "showing_chart") and self.current_room.showing_chart) or 
+                (hasattr(self.current_room, "showing_image") and self.current_room.showing_image)
+            ):
+                self.player.draw(self.camera_x, self.camera_y)
+                self.ui.draw()
 
         # Podpowiedzi interakcji
         if self.interaction_hint and not self.paused:
-            hint_box = pygame.Rect(SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT - 70, 400, 40)
-            pygame.draw.rect(screen, (255, 255, 224), hint_box, border_radius=12)
             hint_text = font.render(self.interaction_hint, True, BLACK)
+            hint_box = hint_text.get_rect()
+            hint_box.inflate_ip(40, 20)  # powiększamy prostokąt wokół tekstu
+
+            hint_box.centerx = SCREEN_WIDTH // 2
+            hint_box.bottom = SCREEN_HEIGHT - 30
+
+            pygame.draw.rect(screen, (255, 255, 255), hint_box, border_radius=12)  # białe obramowanie
             screen.blit(hint_text, (hint_box.x + 20, hint_box.y + 10))
             
         # Rysuj stół z kubkami
+
         cups_table_screen_pos = (
             self.cups_table_rect.x - self.camera_x,
             self.cups_table_rect.y - self.camera_y
@@ -467,12 +554,58 @@ class Game:
                 beetle_table_screen_pos[1] + self.beetle_table_rect.height // 2
             ))
         screen.blit(beetle_text, beetle_text_rect)
+
+        # if self.get_current_room_name() == "GameRoom":
+        #     cups_table_screen_pos = (
+        #         self.cups_table_rect.x - self.camera_x,
+        #         self.cups_table_rect.y - self.camera_y
+        #     )
+        #     if (0 <= cups_table_screen_pos[0] <= SCREEN_WIDTH and 
+        #         0 <= cups_table_screen_pos[1] <= SCREEN_HEIGHT):
+                
+        #         # Rysuj stół
+        #         pygame.draw.rect(screen, (139, 69, 19), 
+        #                     (*cups_table_screen_pos, self.cups_table_rect.width, self.cups_table_rect.height))
+        #         pygame.draw.rect(screen, (101, 67, 33), 
+        #                     (*cups_table_screen_pos, self.cups_table_rect.width, self.cups_table_rect.height), 3)
+                
+        #         # Dodaj tekst "KUBKI"
+        #         table_text = font.render("KUBKI", True, (255, 215, 0))
+        #         text_rect = table_text.get_rect(center=(
+        #             cups_table_screen_pos[0] + self.cups_table_rect.width // 2,
+        #             cups_table_screen_pos[1] + self.cups_table_rect.height // 2
+        #         ))
+        #         screen.blit(table_text, text_rect)
+
+        # if self.get_current_room_name() == "GameRoom":
+        #     dice_table_screen_pos = (
+        #         self.dice_table_rect.x - self.camera_x,
+        #         self.dice_table_rect.y - self.camera_y
+        #     )
+        #     if (0 <= dice_table_screen_pos[0] <= SCREEN_WIDTH and 
+        #         0 <= dice_table_screen_pos[1] <= SCREEN_HEIGHT):
+                
+        #         # Rysuj stół do gry w kości
+        #         pygame.draw.rect(screen, (139, 69, 19), 
+        #                     (*dice_table_screen_pos, self.dice_table_rect.width, self.dice_table_rect.height))
+        #         pygame.draw.rect(screen, (101, 67, 33), 
+        #                     (*dice_table_screen_pos, self.dice_table_rect.width, self.dice_table_rect.height), 3)
+                
+        #         # Dodaj tekst "KOŚCI"
+        #         table_text = font.render("KOŚCI", True, (255, 215, 0))
+        #         text_rect = table_text.get_rect(center=(
+        #             dice_table_screen_pos[0] + self.dice_table_rect.width // 2,
+        #             dice_table_screen_pos[1] + self.dice_table_rect.height // 2
+        #         ))
+        #         screen.blit(table_text, text_rect)
+
+
         # Rysuj strefę koła fortuny tylko w GameRoom
-        if self.get_current_room_name() == "GameRoom":
-            wheel_pos = (self.wheel_rect.x - self.camera_x, self.wheel_rect.y - self.camera_y)
-            pygame.draw.rect(screen, (0, 100, 200), (*wheel_pos, self.wheel_rect.width, self.wheel_rect.height))
-            wheel_text = font.render("KOŁO", True, (255, 255, 0))
-            screen.blit(wheel_text, (wheel_pos[0], wheel_pos[1] - 20))
+        # if self.get_current_room_name() == "GameRoom":
+        #     wheel_pos = (self.wheel_rect.x - self.camera_x, self.wheel_rect.y - self.camera_y)
+        #     pygame.draw.rect(screen, (0, 100, 200), (*wheel_pos, self.wheel_rect.width, self.wheel_rect.height))
+        #     wheel_text = font.render("KOŁO", True, (255, 255, 0))
+        #     screen.blit(wheel_text, (wheel_pos[0], wheel_pos[1] - 20))
 
         # Debug info (tylko gdy nie ma pauzy)
         if not self.paused:
@@ -495,47 +628,140 @@ class Game:
         # Kursor myszy
         mouse_pos = pygame.mouse.get_pos()
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-
+    def draw_main_pause_menu_rpg_animated(self, scale_factor):
+        """Rysuje główne menu pauzy w stylu RPG z animacją"""
+        if scale_factor < 0.1:
+            return
+    
+    # Animowany tytuł
+        title_offset = math.sin(self.menu_animation_time * 2) * 3 * scale_factor
+    
+    # Skaluj czcionkę
+        font_size = max(16, int(48 * scale_factor))
+        try:
+            scaled_font = pygame.font.Font("assets/Czcionka.ttf", font_size)
+        except:
+            scaled_font = pygame.font.Font(None, font_size)
+    
+        title = scaled_font.render("~ MENU PAUZY ~", True, (255, 215, 0))
+        title_rect = title.get_rect(center=(self.pause_menu_rect.centerx, 
+                                       self.pause_menu_rect.y + int(60 * scale_factor) + title_offset))
+    
+    # Cień tytułu
+        shadow_offset = max(1, int(3 * scale_factor))
+        shadow = scaled_font.render("~ MENU PAUZY ~", True, (100, 80, 0))
+        shadow_rect = shadow.get_rect(center=(title_rect.centerx + shadow_offset, 
+                                         title_rect.centery + shadow_offset))
+    
+    # Ustaw przezroczystość
+        title.set_alpha(int(self.menu_alpha))
+        shadow.set_alpha(int(self.menu_alpha * 0.7))
+    
+        screen.blit(shadow, shadow_rect)
+        screen.blit(title, title_rect)
+    
+    # Przeskalowane przyciski
+        if scale_factor > 0.3:  # Rysuj przyciski tylko gdy są wystarczająco duże
+            button_width = int(350 * scale_factor)
+            button_height = int(60 * scale_factor)
+            button_x = self.pause_menu_rect.centerx - button_width // 2
+            button_spacing = int(80 * scale_factor)
+        
+            start_y = self.pause_menu_rect.y + int(150 * scale_factor)
+        
+        # Aktualizuj pozycje przycisków
+            scaled_buttons = [
+                pygame.Rect(button_x, start_y, button_width, button_height),
+                pygame.Rect(button_x, start_y + button_spacing, button_width, button_height),
+                pygame.Rect(button_x, start_y + button_spacing * 2, button_width, button_height),
+                pygame.Rect(button_x, start_y + button_spacing * 3, button_width, button_height)
+            ]
+        
+            button_data = [
+                ("Powrót do gry", "green"),
+                ("Ustawienia dźwięku", "blue"),
+                ("Sterowanie", "yellow"),
+                ("Opuść grę", "red")
+            ]
+        
+            mouse_pos = pygame.mouse.get_pos()
+        
+            for i, ((text, color_theme), button_rect) in enumerate(zip(button_data, scaled_buttons)):
+                is_selected = (i == self.selected_button)
+                is_hovered = button_rect.collidepoint(mouse_pos)
+                self.draw_rpg_button_animated(screen, button_rect, text, is_selected, is_hovered, 
+                                        color_theme, scale_factor)
+        
     def draw_pause_menu(self):
-        """Rysuje menu pauzy w stylu RPG"""
+        """Rysuje menu pauzy w stylu RPG z animacją"""
+        # Jeśli menu jest całkowicie niewidoczne, nie rysuj go
+        if self.menu_alpha <= 0:
+            return
+    
         # Animacja pojawiania się menu
         self.menu_animation_time += self.clock.get_time() / 1000.0
-        
-        # Półprzezroczyste tło z efektem
+    
+        # Półprzezroczyste tło z efektem - ZMIENIONE: dodano animację przezroczystości
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        overlay.set_alpha(150)
-        
+        overlay_alpha = int(150 * (self.menu_alpha / 255))
+        overlay.set_alpha(overlay_alpha)
+    
         # Gradient tła
         for y in range(SCREEN_HEIGHT):
-            alpha = int(150 * (y / SCREEN_HEIGHT))
-            color = (0, 0, 20, alpha)
-            pygame.draw.line(overlay, color[:3], (0, y), (SCREEN_WIDTH, y))
-        
+            alpha = int(overlay_alpha * (y / SCREEN_HEIGHT))
+            color = (0, 0, 20)
+            pygame.draw.line(overlay, color, (0, y), (SCREEN_WIDTH, y))
+    
         screen.blit(overlay, (0, 0))
-        
-        # Główne tło menu z teksturą
-        menu_bg = pygame.Surface((self.pause_menu_rect.width, self.pause_menu_rect.height))
-        
-        # Gradient tła menu
-        for y in range(self.pause_menu_rect.height):
-            progress = y / self.pause_menu_rect.height
-            color_r = int(40 + progress * 20)  # Od ciemniejszego do jaśniejszego
+    
+    # DODANE: Oblicz rozmiar i pozycję menu na podstawie skali
+        scaled_width = int(self.pause_menu_rect.width * self.menu_scale)
+        scaled_height = int(self.pause_menu_rect.height * self.menu_scale)
+    
+    # Wycentruj przeskalowane menu
+        scaled_x = (SCREEN_WIDTH - scaled_width) // 2
+        scaled_y = (SCREEN_HEIGHT - scaled_height) // 2
+        scaled_rect = pygame.Rect(scaled_x, scaled_y, scaled_width, scaled_height)
+    
+    # Jeśli menu jest za małe, nie rysuj go
+        if scaled_width < 10 or scaled_height < 10:
+            return
+    
+    # Główne tło menu z teksturą - ZMIENIONE: używaj przeskalowanego rozmiaru
+        menu_bg = pygame.Surface((scaled_width, scaled_height))
+        menu_bg.set_alpha(int(self.menu_alpha))
+    
+    # Gradient tła menu
+        for y in range(scaled_height):
+            progress = y / scaled_height
+            color_r = int(40 + progress * 20)
             color_g = int(30 + progress * 15)
             color_b = int(60 + progress * 30)
-            pygame.draw.line(menu_bg, (color_r, color_g, color_b), (0, y), (self.pause_menu_rect.width, y))
-        
-        screen.blit(menu_bg, self.pause_menu_rect.topleft)
-        
-        # Ozdobna ramka
-        self.draw_ornate_border(screen, self.pause_menu_rect)
-        
-        # Rysuj odpowiednie menu
+            pygame.draw.line(menu_bg, (color_r, color_g, color_b), (0, y), (scaled_width, y))
+    
+        screen.blit(menu_bg, scaled_rect.topleft)
+    
+    # Ozdobna ramka - ZMIENIONE: używaj przeskalowanego prostokąta
+        if self.menu_scale > 0.3:  # Rysuj ramkę tylko gdy menu jest wystarczająco duże
+            self.draw_ornate_border(screen, scaled_rect)
+    
+    # DODANE: Przeskaluj wszystkie elementy menu
+        scale_factor = self.menu_scale
+    
+    # Tymczasowo zmień rozmiary przycisków dla animacji
+        original_pause_rect = self.pause_menu_rect
+        self.pause_menu_rect = scaled_rect
+    
+    # Rysuj odpowiednie menu z przezroczystością
         if self.pause_menu_tab == "main":
-            self.draw_main_pause_menu_rpg()
+            self.draw_main_pause_menu_rpg_animated(scale_factor)
         elif self.pause_menu_tab == "volume":
             self.draw_volume_menu_rpg()
         elif self.pause_menu_tab == "controls":
             self.draw_controls_menu_rpg()
+    
+    # Przywróć oryginalny rozmiar
+        self.pause_menu_rect = original_pause_rect
 
     def draw_main_pause_menu_rpg(self):
         """Rysuje główne menu pauzy w stylu RPG"""
@@ -563,7 +789,7 @@ class Game:
         for i, (button_rect, text, color_theme) in enumerate(button_data):
             is_selected = (i == self.selected_button)
             is_hovered = button_rect.collidepoint(mouse_pos)
-            self.draw_rpg_button(screen, button_rect, text, is_selected, is_hovered, color_theme)
+            self.draw_rpg_button_animated(screen, button_rect, text, is_selected, is_hovered, color_theme)
 
     def draw_volume_menu_rpg(self):
         """Rysuje menu głośności w stylu RPG"""
@@ -612,7 +838,7 @@ class Game:
         # Przycisk powrotu
         mouse_pos = pygame.mouse.get_pos()
         is_hovered = self.back_button.collidepoint(mouse_pos)
-        self.draw_rpg_button(screen, self.back_button, "Powrót", False, is_hovered, "blue")
+        self.draw_rpg_button_animated(screen, self.back_button, "Powrót", False, is_hovered, "blue")
 
     def draw_controls_menu_rpg(self):
         """Rysuje menu sterowania w stylu RPG"""
@@ -659,7 +885,7 @@ class Game:
         # Przycisk powrotu
         mouse_pos = pygame.mouse.get_pos()
         is_hovered = self.back_button.collidepoint(mouse_pos)
-        self.draw_rpg_button(screen, self.back_button, "Powrót", False, is_hovered, "blue")
+        self.draw_rpg_button_animated(screen, self.back_button, "Powrót", False, is_hovered, "blue")
 
     def get_current_room_name(self):
         """Zwraca nazwę aktualnego pokoju"""
@@ -738,20 +964,26 @@ class Game:
 
             # Obsługa ESC dla menu pauzy - PRIORYTET NAJWYŻSZY
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                # Jeśli jest aktywny interfejs FeeRoom, zamknij go
+            # Jeśli jest aktywny interfejs FeeRoom, zamknij go
                 if isinstance(self.current_room, FeeRoom) and self.current_room.fee_interface_active:
                     self.current_room.close_fee_interface()
                     continue
-                
-                # Inaczej obsłuż menu pauzy
+            
+            # Inaczej obsłuż menu pauzy
                 if self.paused:
                     if self.pause_menu_tab != "main":
                         self.pause_menu_tab = "main"
                     else:
+                    # ZMIENIONE: Zamiast natychmiastowego zamknięcia, ustaw animację
                         self.paused = False
+                        self.menu_target_scale = 0.0
+                        self.menu_target_alpha = 0
                 else:
+                # ZMIENIONE: Zamiast natychmiastowego otwarcia, ustaw animację
                     self.paused = True
                     self.pause_menu_tab = "main"
+                    self.menu_target_scale = 1.0
+                    self.menu_target_alpha = 255
                 continue
 
             # Jeśli gra jest spauzowana, obsługuj tylko menu pauzy
@@ -819,8 +1051,16 @@ class Game:
                         self.player.rect.colliderect(self.wheel_rect.inflate(100, 100))
                     ):
                         self.start_minigame_with_loader("wheel")
+
                     elif self.player.rect.colliderect(self.beetle_table_rect.inflate(100, 100)):
                         self.start_minigame_with_loader("beetle")
+
+                    if isinstance(self.current_room, MainRoom) and self.player_near_coffee_machine:
+                        if hasattr(self.current_room, 'coffee_machine'):
+                            success = self.current_room.coffee_machine.try_buy_coffee(self.player)
+                            if success:
+                                print(f"Gracz kupił kawę! Pozostało monet: {self.player.coins}")
+
                     # Sprawdź interakcję z NPCs
                     else:
                         for npc in self.current_room.npcs:
@@ -848,6 +1088,24 @@ class Game:
             elif game_type == "wheel":
                 self.in_wheel_game = True
                 self.wheel_game.reset_game()
+
             elif game_type == "beetle":
                 self.in_beetle_game = True
                 self.beetle_game.reset_game()
+
+
+    def handle_coffee_machine_interaction(self):
+        """Obsługuje interakcje z automatem kawy w MainRoom"""
+        if hasattr(self.current_room, 'coffee_machine'):
+            is_near = self.current_room.coffee_machine.is_player_near(
+                self.player.rect.x, self.player.rect.y)
+            
+            if is_near and not self.player_near_coffee_machine:
+                # Gracz zbliżył się do automatu
+                self.current_room.coffee_machine.show_interaction_prompt()
+                self.player_near_coffee_machine = True
+            elif not is_near and self.player_near_coffee_machine:
+                # Gracz oddalił się od automatu
+                self.current_room.coffee_machine.hide_interaction_prompt()
+                self.player_near_coffee_machine = False
+

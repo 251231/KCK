@@ -324,6 +324,10 @@ class UserInterface:
         
         if self.todo_visible or self.todo_slide_offset > -420:
             self.draw_todo_panel(mouse_pos)
+        # if hasattr(self.player, 'speed_boost_timer') and self.player.speed_boost_timer > 0:
+        #     boost_seconds = int(self.player.speed_boost_timer / 1000)
+        #     boost_text = font.render(f"Boost kawy: {boost_seconds}s", True, GREEN)
+        #     screen.blit(boost_text, (10, 70))
 
     def draw_todo_panel(self, mouse_pos):
         panel_height = min(700, len(self.todo_items) * 56 + 392)

@@ -9,7 +9,9 @@
         "coins": 5
     },
     "xd": {
-        "coins": 160
+
+        "coins": 375
+
     },
     "xd123": {
         "coins": 0
@@ -22,5 +24,8 @@
     },
     "Sebastian": {
         "coins": 100
+    },
+    "1": {
+        "coins": 0
     }
 }
