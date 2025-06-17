@@ -5,7 +5,7 @@ from CoffeeMachine import CoffeeMachine
 
 from pygame.locals import *
 
-from AnimatedLamp import AnimatedLamp
+from AnimatedModels import AnimatedLamp
 
 
 class MainRoom(Room):
@@ -46,11 +46,18 @@ class MainRoom(Room):
     def setup_lamps(self):
         """Konfiguruje pozycje lamp - łatwe do edycji"""
         self.lamps = [
-            # Dodaj lub usuń lampy tutaj, zmieniając pozycje (x, y) i opcjonalnie prędkość animacji
-            AnimatedLamp(x=570, y=50, animation_speed=250, scale=3), 
-            AnimatedLamp(x=1050, y=50, animation_speed=250, scale=3), # Pierwsza lampa
-              # Trzecia lampa
-            # AnimatedLamp(x=900, y=300, animation_speed=180),  # Możesz dodać więcej
+            
+            AnimatedLamp(x=570, y=50, png_name="candelabrum_tall", animation_speed=200, scale=3),
+            AnimatedLamp(x=1050, y=50, png_name="candelabrum_tall", animation_speed=250, scale=3), # Pierwsza lampa
+            AnimatedLamp(x=810, y=740, png_name="candelabrum_small", animation_speed=178, scale=3),
+            AnimatedLamp(x=760, y=850, png_name="candle_1", animation_speed=250, scale=3),
+            AnimatedLamp(x=780, y=860, png_name="candle_2", animation_speed=250, scale=3),
+            AnimatedLamp(x=800, y=850, png_name="candle_1", animation_speed=100, scale=3),
+            
+            AnimatedLamp(x=860, y=850, png_name="candle_1", animation_speed=300, scale=3),
+            AnimatedLamp(x=880, y=860, png_name="candle_2", animation_speed=250, scale=3),
+            AnimatedLamp(x=900, y=850, png_name="candle_1", animation_speed=200, scale=3),
+             
         ]
     
     def setup_coffee_machine(self):

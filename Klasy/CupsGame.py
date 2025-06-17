@@ -73,20 +73,34 @@ class CupsGame:
 
     def _load_graphics(self):
         """Ładuje i cache'uje grafiki"""
-        self.graphics = {'cup': None, 'ball': None}
+        self.graphics = {'cup': None, 'ball': None, 'background': None}
         
         try:
+            # Ładowanie kubka i piłki
             cup_img = pygame.image.load('assets/medieval_cup.png').convert_alpha()
             ball_img = pygame.image.load('assets/golden_ball.png').convert_alpha()
             
             self.graphics['cup'] = pygame.transform.scale(cup_img, (140, 160))  # Większe kubki
             self.graphics['ball'] = pygame.transform.scale(ball_img, (25, 25))  # Nieco większa piłka
             
-            print("Grafiki wczytane pomyślnie!")
+            print("Kubek i piłka wczytane pomyślnie!")
             
         except pygame.error as e:
-            print(f"Nie można wczytać grafik: {e}")
+            print(f"Nie można wczytać kubka/piłki: {e}")
             print("Używam domyślnych rysunków")
+
+        # Ładowanie tła
+        try:
+            # Spróbuj wczytać własne tło
+            background_img = pygame.image.load('assets/kubki.png').convert()
+            # Przeskaluj tło do rozmiaru ekranu
+            self.graphics['background'] = pygame.transform.scale(background_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+            print("Własne tło PNG wczytane pomyślnie!")
+            
+        except pygame.error as e:
+            print(f"Nie można wczytać tła PNG: {e}")
+            print("Używam domyślnego gradientu")
+            self.graphics['background'] = None
 
     def _init_animation(self):
         """Inicjalizuje parametry animacji"""
@@ -139,13 +153,18 @@ class CupsGame:
             self._draw_result()
 
     def _draw_background(self):
-        """Rysuje tło z gradientem"""
-        for y in range(SCREEN_HEIGHT):
-            color_intensity_start = self.colors['bg_start'][0] + int((y / SCREEN_HEIGHT) * 25)
-            color_intensity_green = self.colors['bg_start'][1] + int((y / SCREEN_HEIGHT) * 25)
-            color_intensity_blue = self.colors['bg_start'][2] + int((y / SCREEN_HEIGHT) * 25)
-            color = (color_intensity_start, color_intensity_green, color_intensity_blue)
-            pygame.draw.line(screen, color, (0, y), (SCREEN_WIDTH, y))
+        """Rysuje tło - PNG lub gradient"""
+        if self.graphics['background']:
+            # Używaj własnego tła PNG
+            screen.blit(self.graphics['background'], (0, 0))
+        else:
+            # Fallback - gradient jak wcześniej
+            for y in range(SCREEN_HEIGHT):
+                color_intensity_start = self.colors['bg_start'][0] + int((y / SCREEN_HEIGHT) * 25)
+                color_intensity_green = self.colors['bg_start'][1] + int((y / SCREEN_HEIGHT) * 25)
+                color_intensity_blue = self.colors['bg_start'][2] + int((y / SCREEN_HEIGHT) * 25)
+                color = (color_intensity_start, color_intensity_green, color_intensity_blue)
+                pygame.draw.line(screen, color, (0, y), (SCREEN_WIDTH, y))
 
     def _draw_title(self):
         """Rysuje tytuł gry"""

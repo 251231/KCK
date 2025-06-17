@@ -19,8 +19,12 @@ from WheelOfFortuneGame import WheelOfFortuneGame
 from MiniGameLoader import MiniGameLoader
 
 from PsychologistRoom import PsychologistRoom
+
+
+from AnimatedModels import AnimatedLamp
+
 from Authors import Authors 
-from AnimatedLamp import AnimatedLamp
+
 from CoffeeMachine import CoffeeMachine
 
 class Game:
