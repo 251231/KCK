@@ -42,6 +42,7 @@ class RegisterRoom(Room):
         ]
 
     def update(self, game, dt):
+
         keys = pygame.key.get_pressed()
 
         # Sprawdź interakcję tylko, gdy obraz nie jest aktywny
@@ -103,3 +104,4 @@ class RegisterRoom(Room):
     def move_lamp(self, index, new_x, new_y):
         if 0 <= index < len(self.lamps):
             self.lamps[index].set_position(new_x, new_y)
+
