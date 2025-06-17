@@ -5,8 +5,8 @@ class CoffeeMachine:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.width = 80
-        self.height = 120
+        self.width = 100  # Zwiększono z 80 na 100
+        self.height = 150  # Zwiększono z 120 na 150
         self.rect = pygame.Rect(x, y, self.width, self.height)
         
         # Właściwości automatu
@@ -67,33 +67,33 @@ class CoffeeMachine:
         pygame.draw.rect(surface, BLACK, 
                         (screen_x, screen_y, self.width, self.height), 3)
         
-        # Ekran automatu
-        screen_rect = (screen_x + 10, screen_y + 20, self.width - 20, 30)
+        # Ekran automatu (proporcjonalnie większy)
+        screen_rect = (screen_x + 12, screen_y + 25, self.width - 24, 38)
         pygame.draw.rect(surface, self.screen_color, screen_rect)
         pygame.draw.rect(surface, BLACK, screen_rect, 2)
         
-        # Tekst na ekranie
-        font = pygame.font.Font(None, 24)
-        text = font.render("KAWA 25$", True, WHITE)
-        text_rect = text.get_rect(center=(screen_x + self.width//2, screen_y + 35))
+        # Tekst na ekranie - stylowy i czytelny
+        font = pygame.font.Font('assets/Czcionka.ttf', 18)
+        text = font.render("KAWA", True, WHITE)
+        text_rect = text.get_rect(center=(screen_x + self.width//2, screen_y + 44))
         surface.blit(text, text_rect)
         
-        # Przycisk
-        button_rect = (screen_x + 20, screen_y + 60, self.width - 40, 25)
+        # Przycisk zakupu (proporcjonalnie większy)
+        button_rect = (screen_x + 25, screen_y + 75, self.width - 50, 38)
         pygame.draw.rect(surface, self.button_color, button_rect)
         pygame.draw.rect(surface, BLACK, button_rect, 2)
         
-        button_text = font.render("KUP", True, WHITE)
-        button_text_rect = button_text.get_rect(center=(screen_x + self.width//2, screen_y + 72))
+        button_text = font.render("KLIK", True, WHITE)
+        button_text_rect = button_text.get_rect(center=(screen_x + self.width//2, screen_y + 94))
         surface.blit(button_text, button_text_rect)
         
-        # Światełko (animowane)
+        # Światełko (animowane, proporcjonalnie większe)
         light_color = self.light_color_on if self.light_on else self.light_color_off
         pygame.draw.circle(surface, light_color, 
-                          (screen_x + self.width - 15, screen_y + 15), 5)
+                          (screen_x + self.width - 18, screen_y + 18), 6)
         
-        # Slot na kawę
-        slot_rect = (screen_x + 25, screen_y + 95, self.width - 50, 15)
+        # Slot na kawę (proporcjonalnie większy)
+        slot_rect = (screen_x + 30, screen_y + 120, self.width - 60, 18)
         pygame.draw.rect(surface, BLACK, slot_rect)
         
         # Rysuj interface jeśli aktywny
@@ -106,36 +106,36 @@ class CoffeeMachine:
     
     def draw_interface(self, surface, screen_x, screen_y):
         """Rysuje interface interakcji"""
-        # Tło interfejsu
-        interface_rect = (screen_x - 50, screen_y - 60, self.width + 100, 50)
+        # Tło interfejsu (proporcjonalnie dostosowane)
+        interface_rect = (screen_x - 120, screen_y - 75, self.width + 240, 60)
         pygame.draw.rect(surface, (0, 0, 0, 180), interface_rect)
         pygame.draw.rect(surface, WHITE, interface_rect, 2)
         
-        # Tekst instrukcji
-        font = pygame.font.Font(None, 28)
-        instruction_text = font.render("Naciśnij SPACE aby kupić kawę", True, WHITE)
-        instruction_rect = instruction_text.get_rect(center=(screen_x + self.width//2, screen_y - 35))
+        # Tekst instrukcji - bardziej stylowy
+        font = pygame.font.Font('assets/Czcionka.ttf', 28)
+        instruction_text = font.render(" SPACJA - Kup kawę ", True, WHITE)
+        instruction_rect = instruction_text.get_rect(center=(screen_x + self.width//2, screen_y - 45))
         surface.blit(instruction_text, instruction_rect)
     
     def draw_message(self, surface, screen_x, screen_y):
         """Rysuje wiadomość nad automatem"""
-        font = pygame.font.Font(None, 32)
+        font = pygame.font.Font('assets/Czcionka.ttf', 32)
         
         # Kolor tekstu zależny od typu wiadomości
         color = RED if "brak" in self.message.lower() else GREEN
         
         message_text = font.render(self.message, True, color)
-        message_rect = message_text.get_rect(center=(screen_x + self.width//2, screen_y - 20))
+        message_rect = message_text.get_rect(center=(screen_x + self.width//2, screen_y - 30))
         
         # Tło dla lepszej czytelności
-        bg_rect = message_rect.inflate(20, 10)
+        bg_rect = message_rect.inflate(30, 18)
         pygame.draw.rect(surface, BLACK, bg_rect)
         pygame.draw.rect(surface, color, bg_rect, 2)
         
         surface.blit(message_text, message_rect)
     
-    def is_player_near(self, player_x, player_y, interaction_distance=50):
-        """Sprawdza czy gracz jest blisko automatu"""
+    def is_player_near(self, player_x, player_y, interaction_distance=60):
+        """Sprawdza czy gracz jest blisko automatu (zwiększona odległość dla większego automatu)"""
         player_center_x = player_x + player_size // 2
         player_center_y = player_y + player_size // 2
         machine_center_x = self.x + self.width // 2
@@ -174,16 +174,22 @@ class CoffeeMachine:
                 player.speed_boost_timer = 0
             player.speed_boost_timer = self.boost_duration
             
-            # Pokaż wiadomość sukcesu
-            self.message = f"Kupiłeś kawę! Prędkość zwiększona!"
+            # Pokaż wiadomość sukcesu - bardziej stylowa
+            self.message = "Mmm... pyszna kawa! Czujesz energię!"
             self.message_timer = 3000
+            
+            # UKRYJ PANEL INTERAKCJI PO ZAKUPIE
+            self.hide_interaction_prompt()
             
             return True
         else:
-            # Gracz nie ma wystarczających monet
+            # Gracz nie ma wystarczających monet - bardziej przyjazny komunikat
             needed = self.coffee_price - player.coins
-            self.message = f"Brak monet! Potrzebujesz {needed} więcej"
+            self.message = f"Brakuje Ci {needed} monet na kawę!"
             self.message_timer = 3000
+            
+            # RÓWNIEŻ UKRYJ PANEL PO NIEUDANEJ PRÓBIE ZAKUPU
+            self.hide_interaction_prompt()
             
             return False
     
@@ -197,6 +203,6 @@ class CoffeeMachine:
                 if hasattr(player, 'original_speed'):
                     player.player_speed = player.original_speed
                 
-                # Pokaż wiadomość o końcu boostu
-                self.message = "Efekt kawy się skończył"
+                # Pokaż wiadomość o końcu boostu - bardziej przyjazna
+                self.message = "Efekt kawy minął..."
                 self.message_timer = 2000
