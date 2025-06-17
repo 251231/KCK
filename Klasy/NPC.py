@@ -332,8 +332,8 @@ class NPC:
 
     def draw(self, camera_x, camera_y):
         # Rysuj NPC tylko jeśli czat nie jest aktywny
-        if not self.chat_window.active:
-            pygame.draw.rect(screen, YELLOW, (self.rect.x - camera_x, self.rect.y - camera_y, 40, 40))
+        # if not self.chat_window.active:
+        #     pygame.draw.rect(screen, YELLOW, (self.rect.x - camera_x, self.rect.y - camera_y, 40, 40))
         
         # Zawsze rysuj okno czatu jeśli jest aktywne (przejmuje cały ekran)
         if self.chat_window.active:

@@ -4,9 +4,10 @@ from NPC import *
 class PsychologistRoom(Room):
     def __init__(self):
         super().__init__(
+                npcs=[NPC(900, 500)],
                 bg_path="assets/PsychologistRoom.png",
                 collision_path="assets/PsychologistRoom_kolizje.png",
-                npcs=[NPC(300, 400)],
+                
                 teleport_zones={
                     (255, 255, 0): ("MainRoom", "from_psychologist"),  # Żółty kolor -> MainRoom
                 },
