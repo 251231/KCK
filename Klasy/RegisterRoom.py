@@ -37,14 +37,14 @@ class RegisterRoom(Room):
             inflated = self.interaction_point["rect"].inflate(100, 100)
             if game.player.rect.colliderect(inflated):
                 game.interaction_hint = self.interaction_point["hint_text"]
-                if keys[pygame.K_SPACE]:
+                if keys[pygame.K_LSHIFT]:
                     self.showing_image = True
                     self.current_image = self.interaction_point["image"]
             else:
                 if game.interaction_hint == self.interaction_point["hint_text"]:
                     game.interaction_hint = None
         else:
-            if keys[pygame.K_LSHIFT]:
+            if keys[pygame.K_RETURN]:
                 self.showing_image = False
                 self.current_image = None
                 game.interaction_hint = None

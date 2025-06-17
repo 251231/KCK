@@ -8,7 +8,7 @@ class Authors(Room):
             collision_path="assets/Authors.png",
             npcs=None,
             teleport_zones={},
-            entry_points={"default": (1138, 350)}  # Niepotrzebne, ale wymagane przez klasę bazową
+            entry_points={"default": (1350, 350)}  # Niepotrzebne, ale wymagane przez klasę bazową
         )
         bg = pygame.image.load("assets/Authors.png").convert()
         self.scaled_background = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
