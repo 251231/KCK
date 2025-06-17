@@ -20,7 +20,7 @@ from MiniGameLoader import MiniGameLoader
 
 from PsychologistRoom import PsychologistRoom
 
-from AnimatedLamp import AnimatedLamp
+from AnimatedModels import AnimatedLamp
 from CoffeeMachine import CoffeeMachine
 
 class Game:

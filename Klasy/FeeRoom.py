@@ -2,7 +2,7 @@ from Room import Room
 from NPC import *
 import pygame
 from config import *
-
+from AnimatedModels import AnimatedLamp
 class FeeRoom(Room):
     def __init__(self):
         super().__init__(
@@ -17,6 +17,7 @@ class FeeRoom(Room):
                 "from_main": (1345, 600),    # Gdzie gracz pojawia się przychodząc z MainRoom
             }
         )
+        
         
         # Strefa wpłat monet
         self.fee_zone = pygame.Rect(500, 300, 80, 80)
@@ -36,7 +37,7 @@ class FeeRoom(Room):
         self.confirm_button = None
         self.cancel_button = None
         self.current_player = None  # Referencja do gracza
-        
+        self.setup_lamps()
     def init_interface_buttons(self):
         """Inicjalizuje przyciski interfejsu"""
         interface_rect = pygame.Rect(SCREEN_WIDTH//2 - 200, SCREEN_HEIGHT//2 - 150, 400, 300)
@@ -146,7 +147,8 @@ class FeeRoom(Room):
             self.fee_message_timer -= delta_time
             if self.fee_message_timer <= 0:
                 self.fee_message = ""
-
+        for lamp in self.lamps:
+            lamp.update()
     def draw(self, screen, camera_x, camera_y):
         """Rysuje pokój wraz z interfejsem wypłat"""
         # Rysuj podstawowy pokój
@@ -195,6 +197,12 @@ class FeeRoom(Room):
         # Rysuj interfejs wpłat jeśli jest aktywny
         if self.fee_interface_active:
             self.draw_fee_interface(screen)
+        
+        
+        
+        # Rysuj lampy na górze
+        for lamp in self.lamps:
+            lamp.draw(screen, camera_x, camera_y)
 
     def draw_fee_interface(self, screen):
         """Rysuje interfejs wypłacania monet"""
@@ -319,3 +327,41 @@ class FeeRoom(Room):
     def check_fee_interaction(self, player):
         """Sprawdza czy gracz może wejść w interakcję ze strefą wpłat"""
         return player.rect.colliderect(self.fee_zone.inflate(50, 50))
+    def setup_lamps(self):
+        """Konfiguruje pozycje lamp - łatwe do edycji"""
+        self.lamps = [
+            AnimatedLamp(x=40, y=300, png_name="torch_big", animation_speed=250, scale=3),
+            AnimatedLamp(x=1450, y=300, png_name="torch_big", animation_speed=250, scale=3),
+            AnimatedLamp(x=1450, y=800, png_name="torch_big", animation_speed=250, scale=3),
+            AnimatedLamp(x=1050, y=15, png_name="torch_small", animation_speed=250, scale=3),
+            AnimatedLamp(x=300, y=15, png_name="torch_small", animation_speed=250, scale=3),
+            AnimatedLamp(x=40, y=800, png_name="torch_big", animation_speed=250, scale=3),
+            
+             
+        ]   
+
+    
+    def handle_interaction(self, game, key_pressed):
+        """Obsługuje interakcje w pokoju"""
+        if key_pressed == pygame.K_e and self.player_near_coffee_machine:
+            # Gracz próbuje kupić kawę
+            success = self.coffee_machine.try_buy_coffee(game.player)
+            return success
+        return False
+    
+    
+    def add_lamp(self, x, y, animation_speed=200):
+        """Dodaje nową lampę w określonej pozycji"""
+        new_lamp = AnimatedLamp(x, y, animation_speed)
+        self.lamps.append(new_lamp)
+        return new_lamp
+    
+    def remove_lamp(self, index):
+        """Usuwa lampę o określonym indeksie"""
+        if 0 <= index < len(self.lamps):
+            del self.lamps[index]
+    
+    def move_lamp(self, index, new_x, new_y):
+        """Przesuwa lampę o określonym indeksie"""
+        if 0 <= index < len(self.lamps):
+            self.lamps[index].set_position(new_x, new_y)
