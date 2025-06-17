@@ -28,7 +28,7 @@ class FeeRoom(Room):
         self.selected_fee_index = -1  # Która opłata jest aktualnie wybrana
 
         # Strefa wyboru opłat - przesunięta niżej w pokoju
-        self.fee_zone = pygame.Rect(600, 600, 100, 100)  # Większa strefa
+        self.fee_zone = pygame.Rect(350, 600, 50, 50)  # Większa strefa
         self.fee_interface_active = False
         self.fee_message = ""
         self.fee_message_timer = 0
@@ -213,12 +213,14 @@ class FeeRoom(Room):
         self.draw_fee_zone(screen, camera_x, camera_y)
         
         # Rysuj interfejs wyboru jeśli jest aktywny
-        if self.fee_interface_active:
-            self.draw_fee_interface(screen)
+        
         
         # Rysuj lampy na górze
         for lamp in self.lamps:
             lamp.draw(screen, camera_x, camera_y)
+
+        if self.fee_interface_active:
+            self.draw_fee_interface(screen)    
 
     def draw_fee_zone(self, screen, camera_x, camera_y):
         """Rysuje elegancką strefę opłat"""
@@ -308,7 +310,7 @@ class FeeRoom(Room):
         
         # Animowany tytuł
         title_scale = 1 + 0.1 * math.sin(self.animation_time * 4)
-        title_font = pygame.font.Font(None, int(36 * title_scale))
+        title_font = pygame.font.Font('assets/Czcionka.ttf', int(36 * title_scale))
         title_text = title_font.render("OPŁATY STUDENCKIE", True, self.accent_color)
         title_rect = title_text.get_rect(center=(interface_rect.centerx, interface_rect.y + 40))
         screen.blit(title_text, title_rect)
@@ -510,7 +512,7 @@ class FeeRoom(Room):
 
     def check_fee_interaction(self, player):
         """Sprawdza czy gracz może wejść w interakcję ze strefą wyboru opłat"""
-        return player.rect.colliderect(self.fee_zone.inflate(50, 50))
+        return player.rect.colliderect(self.fee_zone.inflate(300, 300))
     
     def setup_lamps(self):
         """Konfiguruje pozycje lamp - łatwe do edycji"""
@@ -545,3 +547,5 @@ class FeeRoom(Room):
         """Przesuwa lampę o określonym indeksie"""
         if 0 <= index < len(self.lamps):
             self.lamps[index].set_position(new_x, new_y)
+
+         

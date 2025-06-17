@@ -305,7 +305,7 @@ class UserInterface:
             self.draw_pause_overlay(screen)
         
         player_panel = pygame.Rect(SCREEN_WIDTH - 350, 14, 336, 140)
-        self.draw_rpg_panel(screen, player_panel, "BOHATER", 'main')
+        self.draw_rpg_panel(screen, player_panel, "STUDENT", 'main')
         
         name_text = self.get_font('medium').render(f"{self.player.name}", False, self.colors['text_accent'])
         coins_text = self.get_font('small').render(f"Złoto: {self.player.coins}", False, self.colors['text_primary'])

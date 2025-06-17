@@ -25,6 +25,7 @@ class InstructionScreen:
             "",
             "INTERFEJS:",
             "ESC - Menu pauzy",
+            "SPACE lub LSHIFT - Interakcja z obiektami",
             "Powodzenia w przygodzie!"
         ]
     

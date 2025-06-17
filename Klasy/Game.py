@@ -344,7 +344,10 @@ class Game:
         elif self.player.rect.colliderect(self.wheel_rect.inflate(100, 100))and self.get_current_room_name() == "GameRoom":
             self.interaction_hint = "Naciśnij SPACJĘ, aby zakręcić kołem"
         elif self.player.rect.colliderect(self.beetle_table_rect.inflate(100, 100)) and self.get_current_room_name() == "GameRoom":
-            self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w beetle"
+            self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w żuki"
+        elif self.get_current_room_name() == "FeeRoom" and hasattr(self.current_room, "fee_zone"):
+            if self.player.rect.colliderect(self.current_room.fee_zone.inflate(300, 300)):
+                self.interaction_hint = "Naciśnij SPACJĘ, aby otworzyć interfejs opłat"   
         else:
             self.interaction_hint = None
         
@@ -479,10 +482,13 @@ class Game:
         # Rysuj tło pokoju
         self.current_room.draw(screen, self.camera_x, self.camera_y)
 
+        
+        
         if not isinstance(self.current_room, Authors):
             if not (
                 (hasattr(self.current_room, "showing_chart") and self.current_room.showing_chart) or 
-                (hasattr(self.current_room, "showing_image") and self.current_room.showing_image)
+                (hasattr(self.current_room, "showing_image") and self.current_room.showing_image) or
+                (hasattr(self.current_room, "fee_interface_active") and self.current_room.fee_interface_active)
             ):
                 self.player.draw(self.camera_x, self.camera_y)
                 self.ui.draw()
