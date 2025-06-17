@@ -57,11 +57,11 @@ class CupsGame:
         
         # Przyciski - przesunięte wyżej, żeby nie zasłaniały tekstu
         self.buttons = {
-            'bet_up': pygame.Rect(250, SCREEN_HEIGHT - 260, 40, 35),        # Przesunięte wyżej
-            'bet_down': pygame.Rect(295, SCREEN_HEIGHT - 260, 40, 35),      # Przesunięte wyżej
-            'bet_up_big': pygame.Rect(340, SCREEN_HEIGHT - 260, 60, 35),    # Przesunięte wyżej
-            'bet_down_big': pygame.Rect(405, SCREEN_HEIGHT - 260, 60, 35),  # Przesunięte wyżej
-            'play': pygame.Rect(center_x - 80, 380, 160, 50),               # Przesunięty niżej
+            'bet_up': pygame.Rect(50, SCREEN_HEIGHT - 260, 40, 35),        # Przesunięte wyżej
+            'bet_down': pygame.Rect(95, SCREEN_HEIGHT - 260, 40, 35),      # Przesunięte wyżej
+            'bet_up_big': pygame.Rect(140, SCREEN_HEIGHT - 260, 60, 35),    # Przesunięte wyżej
+            'bet_down_big': pygame.Rect(205, SCREEN_HEIGHT - 260, 60, 35),  # Przesunięte wyżej
+            'play': pygame.Rect(center_x - 120, 380, 240, 50),               # Przesunięty niżej
             'exit': pygame.Rect(SCREEN_WIDTH - 120, 10, 110, 40)
         }
         
@@ -367,7 +367,7 @@ class CupsGame:
 
     def _draw_instructions(self):
         """Rysuje panel instrukcji - większy"""
-        instr_rect = pygame.Rect(SCREEN_WIDTH - 340, 80, 330, 200)  # Większy panel
+        instr_rect = pygame.Rect(SCREEN_WIDTH - 370, 80, 360, 220)  # Większy panel
         self._draw_panel(instr_rect)
         
         title = self.fonts['normal'].render("INSTRUKCJE", True, self.colors['gold'])
@@ -378,7 +378,7 @@ class CupsGame:
         for i, instruction in enumerate(instructions):
             if instruction:
                 text = self.fonts['small'].render(instruction, True, self.colors['text_white'])
-                screen.blit(text, (SCREEN_WIDTH - 310, 120 + i * 22))  # Większe odstępy
+                screen.blit(text, (SCREEN_WIDTH - 330, 120 + i * 22))  # Większe odstępy
 
     def _get_instructions(self):
         """Zwraca uproszczone instrukcje"""
@@ -435,7 +435,7 @@ class CupsGame:
 
     def _draw_result(self):
         """Rysuje panel z wynikiem"""
-        result_rect = pygame.Rect(SCREEN_WIDTH//2 - 250, 330, 500, 50)
+        result_rect = pygame.Rect(SCREEN_WIDTH//2 - 300, 330, 600, 50)
         
         if "Wygrana" in self.result:
             bg_color = self.colors['green']
