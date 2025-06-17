@@ -6,11 +6,11 @@ from config import *
 class DiceGame:
     def __init__(self, player):
         self.player = player
-        self.font = pygame.font.Font(None, 32)
-        self.large_font = pygame.font.Font(None, 42)
-        self.small_font = pygame.font.Font(None, 24)
-        self.title_font = pygame.font.Font(None, 54)
-        self.tiny_font = pygame.font.Font(None, 20)
+        self.font = pygame.font.Font('assets/Czcionka.ttf', 32)
+        self.large_font = pygame.font.Font('assets/Czcionka.ttf', 42)
+        self.small_font = pygame.font.Font('assets/Czcionka.ttf', 24)
+        self.title_font = pygame.font.Font('assets/Czcionka.ttf', 54)
+        self.tiny_font = pygame.font.Font('assets/Czcionka.ttf', 20)
         
         self.max_bets = 5
         self.result = ""

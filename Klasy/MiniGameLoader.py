@@ -227,10 +227,6 @@ class MiniGameLoader:
             pygame.draw.circle(screen, self.warm_colors['accent_warm'], (center_x, center_y), track_radius + 15, 2)
             pygame.draw.circle(screen, self.warm_colors['accent_warm'], (center_x, center_y), track_radius - 15, 2)
             
-            # Linia mety
-            meta_x = center_x + track_radius
-            pygame.draw.line(screen, self.warm_colors['text_cream'], 
-                           (meta_x, center_y - 20), (meta_x, center_y + 20), 3)
         
         else:
             # Domyślny spinner

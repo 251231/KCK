@@ -436,17 +436,19 @@ class Game:
                 self.draw_pause_menu()
             pygame.display.flip()
             return
-        elif self.in_beetle_game:
+        elif self.in_beetle_game and self.get_current_room_name() == "GameRoom":
             self.beetle_game.draw()
             if self.paused:
                 self.draw_pause_menu()
             pygame.display.flip()
             return
+        
         if hasattr(self.player, 'speed_boost_timer') and self.player.speed_boost_timer > 0:
             boost_seconds = int(self.player.speed_boost_timer / 1000)
             font = pygame.font.Font(None, 32)
             boost_text = font.render(f"Boost kawy: {boost_seconds}s", True, GREEN)
             screen.blit(boost_text, (10, 50))
+
         # Jeśli jakiś NPC ma aktywne okno czatu, rysuj tylko okno czatu
         for npc in self.current_room.npcs:
             if npc.chat_window.active:
