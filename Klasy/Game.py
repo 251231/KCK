@@ -20,7 +20,11 @@ from MiniGameLoader import MiniGameLoader
 
 from PsychologistRoom import PsychologistRoom
 
+
 from AnimatedModels import AnimatedLamp
+
+from Authors import Authors 
+
 from CoffeeMachine import CoffeeMachine
 
 class Game:
@@ -245,13 +249,14 @@ class Game:
             "RegisterRoom": RegisterRoom(),
             "FeeRoom": FeeRoom(),
             "DataRoom": DataRoom(),
-            "PsychologistRoom": PsychologistRoom()
+            "PsychologistRoom": PsychologistRoom(),
+            "Authors":Authors()
         }
 
     def is_in_any_interaction(self):
         """Sprawdza czy gracz jest w jakiejkolwiek interakcji (minigra, rozmowa z NPC, lub wpłaty)"""
         # Sprawdź minigry
-        if self.in_dice_game or self.in_cups_game or self.in_wheel_game:
+        if self.in_dice_game or self.in_cups_game or self.in_wheel_game :
             return True
         
         # Sprawdź czy jakiś NPC ma aktywne okno czatu
@@ -325,13 +330,16 @@ class Game:
     def update_interaction_hints(self):
         """Aktualizuje podpowiedzi interakcji"""
         
+        if self.get_current_room_name() == "DataRoom" or self.get_current_room_name() == "RegisterRoom":
+            return
+
         if self.player.rect.colliderect(self.automat_rect.inflate(100, 100)) and self.get_current_room_name() == "GameRoom":
             self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w kości"
         elif self.player.rect.colliderect(self.cups_table_rect.inflate(100, 100)) and self.get_current_room_name() == "GameRoom":
             self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w kubki"
-        elif any(self.player.rect.colliderect(npc.rect.inflate(100, 100)) for npc in self.current_room.npcs) and self.get_current_room_name() == "GameRoom":
+        elif any(self.player.rect.colliderect(npc.rect.inflate(100, 100)) for npc in self.current_room.npcs) :
             self.interaction_hint = "Naciśnij SPACJĘ, aby porozmawiać"
-        elif self.player.rect.colliderect(self.wheel_rect.inflate(100, 100)):
+        elif self.player.rect.colliderect(self.wheel_rect.inflate(100, 100))and self.get_current_room_name() == "GameRoom":
             self.interaction_hint = "Naciśnij SPACJĘ, aby zakręcić kołem"
         elif isinstance(self.current_room, FeeRoom) and self.current_room.check_fee_interaction(self.player):
             self.interaction_hint = "Naciśnij SPACJĘ, aby wypłacić monety"
@@ -361,7 +369,6 @@ class Game:
     def change_room(self, room_name, entry_point="default"):
         """Zmienia pokój i ustawia gracza w odpowiednim miejscu"""
         if room_name in self.rooms:
-            print(f"Zmieniam pokój na: {room_name}, punkt wejścia: {entry_point}")
             
             # Zmień pokój
             self.current_room = self.rooms[room_name]
@@ -407,13 +414,13 @@ class Game:
         screen.fill(BLACK)
         
         # Jeśli jesteśmy w minigre, rysuj tylko minigrę
-        if self.in_dice_game:
+        if self.in_dice_game and self.get_current_room_name() == "GameRoom":
             self.dice_game.draw()
             if self.paused:
                 self.draw_pause_menu()
             pygame.display.flip()
             return
-        elif self.in_cups_game:
+        elif self.in_cups_game and self.get_current_room_name() == "GameRoom":
             self.cups_game.draw()
             if self.paused:
                 self.draw_pause_menu()
@@ -461,15 +468,25 @@ class Game:
         """Rysuje główną grę (pokój, gracza, UI itp.)"""
         # Rysuj tło pokoju
         self.current_room.draw(screen, self.camera_x, self.camera_y)
-        
-        self.player.draw(self.camera_x, self.camera_y)
-        self.ui.draw()
+
+        if not isinstance(self.current_room, Authors):
+            if not (
+                (hasattr(self.current_room, "showing_chart") and self.current_room.showing_chart) or 
+                (hasattr(self.current_room, "showing_image") and self.current_room.showing_image)
+            ):
+                self.player.draw(self.camera_x, self.camera_y)
+                self.ui.draw()
 
         # Podpowiedzi interakcji
         if self.interaction_hint and not self.paused:
-            hint_box = pygame.Rect(SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT - 70, 400, 40)
-            pygame.draw.rect(screen, (255, 255, 224), hint_box, border_radius=12)
             hint_text = font.render(self.interaction_hint, True, BLACK)
+            hint_box = hint_text.get_rect()
+            hint_box.inflate_ip(40, 20)  # powiększamy prostokąt wokół tekstu
+
+            hint_box.centerx = SCREEN_WIDTH // 2
+            hint_box.bottom = SCREEN_HEIGHT - 30
+
+            pygame.draw.rect(screen, (255, 255, 255), hint_box, border_radius=12)  # białe obramowanie
             screen.blit(hint_text, (hint_box.x + 20, hint_box.y + 10))
             
         # Rysuj stół z kubkami

@@ -28,7 +28,8 @@ class MainRoom(Room):
                     "from_register":(211,538),
                     "from_fee":(211,1330),
                     "from_data":(1420,575),
-                    "from_psychologist":(1420,1362)
+                    "from_psychologist":(1420,1362),
+                    "from_authors": (1350, 350)  # Gdzie gracz pojawia się wracając z Authors
                 }
 
             )
