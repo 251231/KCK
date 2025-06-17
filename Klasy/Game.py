@@ -18,6 +18,9 @@ from CupsGame import CupsGame
 from WheelOfFortuneGame import WheelOfFortuneGame
 from MiniGameLoader import MiniGameLoader
 
+from Beetle import *
+
+
 from PsychologistRoom import PsychologistRoom
 
 
@@ -26,6 +29,7 @@ from AnimatedModels import AnimatedLamp
 from Authors import Authors 
 
 from CoffeeMachine import CoffeeMachine
+
 
 class Game:
     def __init__(self, username, music_manager=None):
@@ -54,10 +58,13 @@ class Game:
         self.wheel_game = WheelOfFortuneGame(self.player)
         self.in_wheel_game = False
 
-        
-        self.automat_rect = pygame.Rect(786, 407, 50, 50)
-        self.cups_table_rect = pygame.Rect(1207, 408, 60, 60)
-        self.wheel_rect = pygame.Rect(369, 433, 60, 60)
+        self.beetle_game = BeetleRaceGame(self.player)
+        self.in_beetle_game = False
+        self.beetle_table_rect = pygame.Rect(400, 600, 60, 60)
+        self.automat_rect = pygame.Rect(1000, 700, 50, 50)
+        self.cups_table_rect = pygame.Rect(800, 600, 60, 60)
+        self.wheel_rect = pygame.Rect(600, 600, 60, 60)
+
         self.interaction_hint = None
 
         # Menu pauzy
@@ -256,7 +263,9 @@ class Game:
     def is_in_any_interaction(self):
         """Sprawdza czy gracz jest w jakiejkolwiek interakcji (minigra, rozmowa z NPC, lub wpłaty)"""
         # Sprawdź minigry
-        if self.in_dice_game or self.in_cups_game or self.in_wheel_game :
+
+        if self.in_dice_game or self.in_cups_game or self.in_wheel_game or self.in_beetle_game:
+
             return True
         
         # Sprawdź czy jakiś NPC ma aktywne okno czatu
@@ -294,6 +303,8 @@ class Game:
     # DODANE: Aktualizuj animację menu również gdy gra nie jest spauzowana
         self.update_menu_animation(delta_time)
             
+        if self.in_beetle_game:
+            self.beetle_game.update(delta_time)
         # Jeśli jesteśmy w interakcji, nie aktualizuj gry głównej
         if self.is_in_any_interaction():
             # Aktualizuj tylko FeeRoom jeśli jego interfejs jest aktywny
@@ -343,6 +354,8 @@ class Game:
             self.interaction_hint = "Naciśnij SPACJĘ, aby zakręcić kołem"
         elif isinstance(self.current_room, FeeRoom) and self.current_room.check_fee_interaction(self.player):
             self.interaction_hint = "Naciśnij SPACJĘ, aby wypłacić monety"
+        elif self.player.rect.colliderect(self.beetle_table_rect.inflate(100, 100)):
+            self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w beetle"
         else:
             self.interaction_hint = None
         
@@ -426,17 +439,27 @@ class Game:
                 self.draw_pause_menu()
             pygame.display.flip()
             return
-        if self.in_wheel_game and self.get_current_room_name() == "GameRoom":
+        elif self.in_wheel_game and self.get_current_room_name() == "GameRoom":
             self.wheel_game.draw()
             if self.paused:
                 self.draw_pause_menu()
             pygame.display.flip()
             return
+
+        elif self.in_beetle_game:
+            self.beetle_game.draw()
+            if self.paused:
+                self.draw_pause_menu()
+            pygame.display.flip()
+            return
+  
+
         if hasattr(self.player, 'speed_boost_timer') and self.player.speed_boost_timer > 0:
             boost_seconds = int(self.player.speed_boost_timer / 1000)
             font = pygame.font.Font(None, 32)
             boost_text = font.render(f"Boost kawy: {boost_seconds}s", True, GREEN)
             screen.blit(boost_text, (10, 50))
+
         # Jeśli jakiś NPC ma aktywne okno czatu, rysuj tylko okno czatu
         for npc in self.current_room.npcs:
             if npc.chat_window.active:
@@ -490,6 +513,48 @@ class Game:
             screen.blit(hint_text, (hint_box.x + 20, hint_box.y + 10))
             
         # Rysuj stół z kubkami
+
+        cups_table_screen_pos = (
+            self.cups_table_rect.x - self.camera_x,
+            self.cups_table_rect.y - self.camera_y
+        )
+        if (0 <= cups_table_screen_pos[0] <= SCREEN_WIDTH and 
+            0 <= cups_table_screen_pos[1] <= SCREEN_HEIGHT):
+            
+            # Rysuj stół
+            pygame.draw.rect(screen, (139, 69, 19), 
+                           (*cups_table_screen_pos, self.cups_table_rect.width, self.cups_table_rect.height))
+            pygame.draw.rect(screen, (101, 67, 33), 
+                           (*cups_table_screen_pos, self.cups_table_rect.width, self.cups_table_rect.height), 3)
+            
+            # Dodaj tekst "KUBKI"
+            table_text = font.render("KUBKI", True, (255, 215, 0))
+            text_rect = table_text.get_rect(center=(
+                cups_table_screen_pos[0] + self.cups_table_rect.width // 2,
+                cups_table_screen_pos[1] + self.cups_table_rect.height // 2
+            ))
+            screen.blit(table_text, text_rect)
+        beetle_table_screen_pos = (
+        self.beetle_table_rect.x - self.camera_x,
+        self.beetle_table_rect.y - self.camera_y
+        )
+        if (0 <= beetle_table_screen_pos[0] <= SCREEN_WIDTH and 
+            0 <= beetle_table_screen_pos[1] <= SCREEN_HEIGHT):
+            
+            # Rysuj stół beetle
+            pygame.draw.rect(screen, (139, 69, 19), 
+                        (*beetle_table_screen_pos, self.beetle_table_rect.width, self.beetle_table_rect.height))
+            pygame.draw.rect(screen, (101, 67, 33), 
+                        (*beetle_table_screen_pos, self.beetle_table_rect.width, self.beetle_table_rect.height), 3)
+            
+            # Dodaj tekst "BEETLE"
+            beetle_text = font.render("BEETLE", True, (255, 215, 0))
+            beetle_text_rect = beetle_text.get_rect(center=(
+                beetle_table_screen_pos[0] + self.beetle_table_rect.width // 2,
+                beetle_table_screen_pos[1] + self.beetle_table_rect.height // 2
+            ))
+        screen.blit(beetle_text, beetle_text_rect)
+
         # if self.get_current_room_name() == "GameRoom":
         #     cups_table_screen_pos = (
         #         self.cups_table_rect.x - self.camera_x,
@@ -533,6 +598,7 @@ class Game:
         #             dice_table_screen_pos[1] + self.dice_table_rect.height // 2
         #         ))
         #         screen.blit(table_text, text_rect)
+
 
         # Rysuj strefę koła fortuny tylko w GameRoom
         # if self.get_current_room_name() == "GameRoom":
@@ -948,7 +1014,11 @@ class Game:
                 if not self.wheel_game.in_game:
                     self.in_wheel_game = False
                 continue
-
+            elif self.in_beetle_game:
+                self.beetle_game.handle_event(event)
+                if not self.beetle_game.in_game:
+                    self.in_beetle_game = False
+                continue
             # Sprawdź czy jakiś NPC ma aktywne okno czatu
             any_npc_handled = False
             for npc in self.current_room.npcs:
@@ -981,11 +1051,16 @@ class Game:
                         self.player.rect.colliderect(self.wheel_rect.inflate(100, 100))
                     ):
                         self.start_minigame_with_loader("wheel")
+
+                    elif self.player.rect.colliderect(self.beetle_table_rect.inflate(100, 100)):
+                        self.start_minigame_with_loader("beetle")
+
                     if isinstance(self.current_room, MainRoom) and self.player_near_coffee_machine:
                         if hasattr(self.current_room, 'coffee_machine'):
                             success = self.current_room.coffee_machine.try_buy_coffee(self.player)
                             if success:
                                 print(f"Gracz kupił kawę! Pozostało monet: {self.player.coins}")
+
                     # Sprawdź interakcję z NPCs
                     else:
                         for npc in self.current_room.npcs:
@@ -1014,6 +1089,11 @@ class Game:
                 self.in_wheel_game = True
                 self.wheel_game.reset_game()
 
+            elif game_type == "beetle":
+                self.in_beetle_game = True
+                self.beetle_game.reset_game()
+
+
     def handle_coffee_machine_interaction(self):
         """Obsługuje interakcje z automatem kawy w MainRoom"""
         if hasattr(self.current_room, 'coffee_machine'):
@@ -1028,3 +1108,4 @@ class Game:
                 # Gracz oddalił się od automatu
                 self.current_room.coffee_machine.hide_interaction_prompt()
                 self.player_near_coffee_machine = False
+
