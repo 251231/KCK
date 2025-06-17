@@ -343,8 +343,6 @@ class Game:
             self.interaction_hint = "Naciśnij SPACJĘ, aby porozmawiać"
         elif self.player.rect.colliderect(self.wheel_rect.inflate(100, 100))and self.get_current_room_name() == "GameRoom":
             self.interaction_hint = "Naciśnij SPACJĘ, aby zakręcić kołem"
-        elif isinstance(self.current_room, FeeRoom) and self.current_room.check_fee_interaction(self.player):
-            self.interaction_hint = "Naciśnij SPACJĘ, aby wypłacić monety"
         elif self.player.rect.colliderect(self.beetle_table_rect.inflate(100, 100)) and self.get_current_room_name() == "GameRoom":
             self.interaction_hint = "Naciśnij SPACJĘ, aby zagrać w beetle"
         else:
