@@ -553,7 +553,7 @@ class Game:
                 beetle_table_screen_pos[0] + self.beetle_table_rect.width // 2,
                 beetle_table_screen_pos[1] + self.beetle_table_rect.height // 2
             ))
-        screen.blit(beetle_text, beetle_text_rect)
+            screen.blit(beetle_text, beetle_text_rect)
 
         # if self.get_current_room_name() == "GameRoom":
         #     cups_table_screen_pos = (
