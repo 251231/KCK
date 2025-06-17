@@ -52,7 +52,7 @@ class DataRoom(Room):
     def update(self, game, dt):
         """Aktualizuje pokój, lampy i automat z kawą"""
         # Aktualizuj animacje lamp
-         keys = pygame.key.get_pressed()
+        keys = pygame.key.get_pressed()
 
         # Jeśli NIE pokazujemy obrazka — sprawdzamy czy gracz jest blisko któregoś punktu
         if not self.showing_chart:

@@ -48,7 +48,7 @@ class RegisterRoom(Room):
     def update(self, game, dt):
         """Aktualizuje pokój, lampy i automat z kawą"""
         # Aktualizuj animacje lamp
-         keys = pygame.key.get_pressed()
+        keys = pygame.key.get_pressed()
 
         if not self.showing_image:
             inflated = self.interaction_point["rect"].inflate(100, 100)
@@ -113,7 +113,7 @@ class RegisterRoom(Room):
         """Przesuwa lampę o określonym indeksie"""
         if 0 <= index < len(self.lamps):
             self.lamps[index].set_position(new_x, new_y)
-=======           
+        
 
     
         
