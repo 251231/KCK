@@ -44,6 +44,9 @@ class AIChatWindow:
         self.typing_cursor = 0
         self.cursor_timer = 0
         
+        # Marginesy od krawędzi ekranu
+        self.margin = 30
+        
         # Ładowanie tła - pełnoekranowe
         try:
             self.background = pygame.image.load("assets/terapeuta_sredniowieczny.png")
@@ -52,28 +55,39 @@ class AIChatWindow:
             self.background = None
             print("Nie można załadować pliku terapeuta_sredniowieczny.png")
         
-        # Pozycje i rozmiary elementów - pasek na dole ekranu
-        self.chat_panel_height = 200
+        # Pozycje i rozmiary elementów - pasek na dole ekranu z marginesami
+        self.chat_panel_height = 300
         self.input_height = 50
         
-        # Panel czatu na dole ekranu
-        self.chat_panel = pygame.Rect(0, SCREEN_HEIGHT - self.chat_panel_height, 
-                                     SCREEN_WIDTH, self.chat_panel_height)
+        # Panel czatu na dole ekranu z marginesami
+        self.chat_panel = pygame.Rect(self.margin, 
+                                     SCREEN_HEIGHT - self.chat_panel_height - self.margin, 
+                                     SCREEN_WIDTH - 2 * self.margin, 
+                                     self.chat_panel_height)
         
         # Obszar na historię rozmowy
-        self.chat_area = pygame.Rect(20, SCREEN_HEIGHT - self.chat_panel_height + 10, 
-                                    SCREEN_WIDTH - 40, self.chat_panel_height - self.input_height - 20)
+        self.chat_area = pygame.Rect(self.chat_panel.x + 20, 
+                                    self.chat_panel.y + 10, 
+                                    self.chat_panel.width - 40, 
+                                    self.chat_panel.height - self.input_height - 30)
         
         # Pole wprowadzania tekstu
-        self.input_rect = pygame.Rect(20, SCREEN_HEIGHT - self.input_height - 10, 
-                                     SCREEN_WIDTH - 140, self.input_height - 10)
+        self.input_rect = pygame.Rect(self.chat_panel.x + 20, 
+                                     self.chat_panel.bottom - self.input_height - 10, 
+                                     self.chat_panel.width - 160, 
+                                     self.input_height - 10)
         
         # Przycisk wysyłania
-        self.send_button = pygame.Rect(SCREEN_WIDTH - 110, SCREEN_HEIGHT - self.input_height - 10, 
-                                      80, self.input_height - 10)
+        self.send_button = pygame.Rect(self.input_rect.right + 10, 
+                                      self.input_rect.y, 
+                                      100, 
+                                      self.input_rect.height)
         
-        # Przycisk zamknięcia (prawy górny róg)
-        self.exit_button = pygame.Rect(SCREEN_WIDTH - 50, 20, 40, 40)
+        # Przycisk zamknięcia (prawy górny róg z marginesem)
+        self.exit_button = pygame.Rect(SCREEN_WIDTH - 120 - self.margin, 
+                                      self.margin, 
+                                      100, 
+                                      45)
         
         # Kolory z przezroczystością
         self.colors = {
@@ -228,7 +242,7 @@ class AIChatWindow:
         else:
             screen.fill((50, 50, 60))  # Zapasowe tło
         
-        # Panel czatu na dole
+        # Panel czatu na dole z marginesami
         self.draw_transparent_surface(screen, self.colors['panel_bg'], self.chat_panel)
         pygame.draw.rect(screen, self.colors['border'], self.chat_panel, 2)
         
@@ -307,21 +321,19 @@ class AIChatWindow:
         send_rect = send_text.get_rect(center=self.send_button.center)
         screen.blit(send_text, send_rect)
         
-        # Przycisk zamknięcia (prawy górny róg)
+        # Przycisk zamknięcia (prawy górny róg z marginesem)
         exit_color = self.colors['exit_hover'] if self.exit_button.collidepoint(mouse_pos) else self.colors['exit_button']
         self.draw_transparent_surface(screen, exit_color, self.exit_button)
         pygame.draw.rect(screen, self.colors['border'], self.exit_button, 2)
         
-        # X na przycisku wyjścia
-        x_text = font.render("Exit", True, self.colors['text_color'])
-        x_rect = x_text.get_rect(center=self.exit_button.center)
-        screen.blit(x_text, x_rect)
+        # "Wyjście" na przycisku
+        exit_text = font.render("Wyjście", True, self.colors['text_color'])
+        exit_rect = exit_text.get_rect(center=self.exit_button.center)
+        screen.blit(exit_text, exit_rect)
         
-        # Instrukcja na górze ekranu
-        draw_text_with_background(screen, "Naciśnij Exit w prawym górnym rogu aby wrócić do gry",
-                         font, (255, 255, 255), (50, 50, 50, 180), (SCREEN_WIDTH // 2, 30))
-        
-        # Tło dla instrukcji
+        # Instrukcja na górze ekranu z marginesem
+        draw_text_with_background(screen, "Naciśnij 'Wyjście' w prawym górnym rogu aby wrócić do gry",
+                         font, (255, 255, 255), (50, 50, 50, 180), (SCREEN_WIDTH // 2, 50))
         
         
 
@@ -358,5 +370,3 @@ class NPC:
    
         if self.chat_window.active:
             self.chat_window.draw()
-
-    
